@@ -101,10 +101,6 @@ data "aws_ecr_repository" "repository" {
 }
 
 module "ecs" {
-  depends_on = [
-    module.database_cluster
-  ]
-
   source = "./ecs"
 
   app_name            = "${terraform.workspace}-${local.app_name}"
