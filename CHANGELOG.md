@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.0 - 2023-01-23
+#### Bug Fixes
+- wrong repository targeted - (e8dd6b6) - Derek
+- terraform runs release - (4ba96da) - Derek
+#### Features
+- removes dependency - (976c172) - Derek
+- - -
+
 ## v0.1.2 - 2023-01-23
 #### Bug Fixes
 - var files don't exist - (26abfc5) - Derek
