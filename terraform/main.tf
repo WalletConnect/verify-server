@@ -11,7 +11,7 @@ data "assert_test" "workspace" {
 }
 
 data "github_release" "latest_release" {
-  repository  = local.app_name
+  repository  = "bouncer"
   owner       = "walletconnect"
   retrieve_by = "latest"
 }
