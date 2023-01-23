@@ -28,4 +28,13 @@ describe('verify', () => {
       expect(status).toBe(200)
     })
   })
+  describe('Attestation', () => {
+    const url = `${BASE_URL}/attestation`
+
+    it('can set an attestation', async () => {
+      const { status } = await axios.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
+
+      expect(status).toBe(200)
+    })
+  })
 })
