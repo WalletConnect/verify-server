@@ -48,7 +48,6 @@ jobs:
           - ubuntu-latest
         rust:
           - nightly
-          - stable
         cargo:
           - name: "Clippy"
             cmd: clippy
