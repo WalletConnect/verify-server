@@ -1,6 +1,6 @@
 use {
-    dotenv::dotenv,
     bouncer::{config::Configuration, Result},
+    dotenv::dotenv,
     tokio::sync::broadcast,
 };
 
