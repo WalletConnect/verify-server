@@ -1,5 +1,5 @@
 locals {
-  app_name            = "rust-http-starter"
+  app_name            = "verify"
   fqdn                = terraform.workspace == "prod" ? var.public_url : "${terraform.workspace}.${var.public_url}"
   latest_release_name = data.github_release.latest_release.name
   version             = coalesce(var.image_version, substr(local.latest_release_name, 1, length(local.latest_release_name)))
@@ -66,7 +66,6 @@ module "vpc" {
   one_nat_gateway_per_az = false
 }
 
-# TODO: Remove this later
 module "database_cluster" {
   source = "terraform-aws-modules/rds-aurora/aws"
 
@@ -98,10 +97,14 @@ module "database_cluster" {
 }
 
 data "aws_ecr_repository" "repository" {
-  name = "http-starter"
+  name = "bouncer"
 }
 
 module "ecs" {
+  depends_on = [
+    module.database_cluster
+  ]
+  
   source = "./ecs"
 
   app_name            = "${terraform.workspace}-${local.app_name}"

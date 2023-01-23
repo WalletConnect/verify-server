@@ -105,9 +105,9 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: |
-            ${{ steps.login-ecr.outputs.registry }}/rust-http-starter
+            ${{ steps.login-ecr.outputs.registry }}/bouncer
             ghcr.io/${{ github.repository }}
-            walletconnect/rust-http-starter,enable=false
+            walletconnect/bouncer,enable=false
           flavor: |
             latest=auto
           tags: |

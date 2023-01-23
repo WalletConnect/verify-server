@@ -1,5 +1,5 @@
 use {
-    rust_http_starter::config::Configuration,
+    bouncer::config::Configuration,
     std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener},
     tokio::{
         runtime::Handle,
@@ -36,7 +36,7 @@ impl RustHttpStarter {
                     is_test: true,
                 };
 
-                rust_http_starter::bootstap(shutdown, config).await
+                bouncer::bootstap(shutdown, config).await
             })
             .unwrap();
         });

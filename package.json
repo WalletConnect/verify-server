@@ -1,7 +1,7 @@
 {
-  "name": "rust-http-starter-integration-tests",
+  "name": "bouncer-integration-tests",
   "version": "1.0.0",
-  "description": "Integration tests for Rust HTTP Starter",
+  "description": "Integration tests for Bouncer",
   "scripts": {
     "integration:prod": "JEST_ENV=prod jest --config integration/jestconfig.integration.json --verbose",
     "integration:staging": "JEST_ENV=staging jest --config integration/jestconfig.integration.json --verbose",
