@@ -1,5 +1,5 @@
 use {
-    crate::{stores::example::ExampleStoreArc, Configuration},
+    crate::{stores::attestation::AttestationStoreArc, Configuration},
     build_info::BuildInfo,
     opentelemetry::{metrics::UpDownCounter, sdk::trace::Tracer},
     tracing_subscriber::prelude::*,
@@ -15,20 +15,20 @@ pub struct AppState {
     pub config: Configuration,
     pub build_info: BuildInfo,
     pub metrics: Option<Metrics>,
-    pub example_store: ExampleStoreArc,
+    pub attestation_store: AttestationStoreArc,
 }
 
 build_info::build_info!(fn build_info);
 
 impl AppState {
-    pub fn new(config: Configuration, example_store: ExampleStoreArc) -> crate::Result<AppState> {
+    pub fn new(config: Configuration, attestation_store: AttestationStoreArc) -> crate::Result<AppState> {
         let build_info: &BuildInfo = build_info();
 
         Ok(AppState {
             config,
             build_info: build_info.clone(),
             metrics: None,
-            example_store,
+            attestation_store,
         })
     }
 

@@ -10,11 +10,16 @@ services:
     environment:
       - POSTGRES_PASSWORD=root
 
+  redis:
+    image: "redis:alpine"
   bouncer:
-    build: .
+    build:
+      dockerfile: ./Dockerfile-dev
+      context: .
     depends_on:
       - jaeger
       - postgres
+      - redis
     ports:
       - "3000:3000"
     environment:
@@ -23,3 +28,4 @@ services:
       - DATABASE_URL=postgres://postgres:root@postgres:5432/postgres
       - TELEMETRY_ENABLED=true
       - TELEMETRY_GRPC_URL=http://jaeger:4317
+      - ATTESTATION_CACHE_URL=redis://redis:6379/0

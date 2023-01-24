@@ -1,19 +1,34 @@
+use std::sync::Arc;
+
 use {
     crate::state::AppState,
-    axum::{extract::{Path, State}, http::StatusCode, response::IntoResponse},
-    std::sync::Arc,
+    axum::{extract::{Json, Path, State as StateExtractor}, http::StatusCode, response::IntoResponse},
+    serde::{Deserialize, Serialize},
 };
 
-pub async fn get(Path(attestation_id): Path<String>, State(_state): State<Arc<AppState>>) -> impl IntoResponse {
-    (
-        StatusCode::OK,
-        format!("OK {}", attestation_id),
-    )
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttestationBody {
+    pub attestation_id: String,
+    pub origin: String,
 }
 
-pub async fn post(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
+pub async fn get(Path(attestation_id): Path<String>, StateExtractor(state): StateExtractor<Arc<AppState>>) -> impl IntoResponse {
+    let attestation = state.attestation_store.get_attestation(&attestation_id).await.unwrap();
+    let resp = AttestationBody {
+        origin: attestation,
+        attestation_id: attestation_id.clone(),
+    };
+    
+    Json(resp)
+}
+
+pub async fn post(StateExtractor(state): StateExtractor<Arc<AppState>>, body: Json<AttestationBody>,) -> impl IntoResponse {
+    let attestation_id = &body.attestation_id;
+    let origin = &body.origin;
+    state.attestation_store.set_attestation(attestation_id, origin).await.unwrap();
     (
         StatusCode::OK,
-        format!("OK"),
+        format!("OK test"),
     )
 }

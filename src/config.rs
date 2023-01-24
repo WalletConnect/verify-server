@@ -14,6 +14,9 @@ pub struct Configuration {
     // TELEMETRY
     pub telemetry_enabled: Option<bool>,
     pub telemetry_grpc_url: Option<String>,
+
+    // Redis
+    pub attestation_cache_url: Option<String>,
 }
 
 impl Configuration {

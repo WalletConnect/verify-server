@@ -32,9 +32,15 @@ describe('verify', () => {
     const url = `${BASE_URL}/attestation`
 
     it('can set an attestation', async () => {
-      const { status } = await axios.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
+      let resp: any = await axios.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
 
-      expect(status).toBe(200)
+      expect(resp.status).toBe(200)
+
+      resp = await axios.get(`${url}/some`)
+
+      expect(resp.status).toBe(200)
+      console.log(resp.data)
+      expect(resp.data.origin).toBe('localhost')
     })
   })
 })

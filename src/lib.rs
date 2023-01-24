@@ -12,7 +12,6 @@ use {
         state::{AppState, Metrics},
     },
     axum::{routing::get, Router},
-    log::LevelFilter,
     opentelemetry::{
         sdk::{
             metrics::selectors,
@@ -23,15 +22,12 @@ use {
         KeyValue,
     },
     opentelemetry_otlp::{Protocol, WithExportConfig},
-    sqlx::{
-        postgres::{PgConnectOptions, PgPoolOptions},
-        ConnectOptions,
-    },
-    std::{net::SocketAddr, str::FromStr, sync::Arc, time::Duration},
+    std::{net::SocketAddr, sync::Arc, time::Duration},
     tokio::{select, sync::broadcast},
     tower::ServiceBuilder,
     tracing::info,
     tracing_subscriber::fmt::format::FmtSpan,
+    deadpool_redis::{Config, Runtime},
 };
 
 build_info::build_info!(fn build_info);
@@ -39,19 +35,11 @@ build_info::build_info!(fn build_info);
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    let pg_options = PgConnectOptions::from_str(&config.database_url)?
-        .log_statements(LevelFilter::Debug)
-        .log_slow_statements(LevelFilter::Info, Duration::from_millis(250))
-        .clone();
+    
+    let mut cfg = Config::from_url(config.clone().attestation_cache_url.unwrap()); // TODO: remove unwrap
+    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap(); // TODO: remove unwrap
 
-    let store = PgPoolOptions::new()
-        .max_connections(5)
-        .connect_with(pg_options)
-        .await?;
-
-    sqlx::migrate!("./migrations").run(&store).await?;
-
-    let mut state = AppState::new(config, Arc::new(store.clone()))?;
+    let mut state = AppState::new(config, Arc::new(pool))?;
 
     // Telemetry
     if state.config.telemetry_enabled.unwrap_or(false) {
