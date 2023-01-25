@@ -12,6 +12,7 @@ use {
         state::{AppState, Metrics},
     },
     axum::{routing::get, Router},
+    deadpool_redis::{Config, Runtime},
     opentelemetry::{
         sdk::{
             metrics::selectors,
@@ -27,7 +28,6 @@ use {
     tower::ServiceBuilder,
     tracing::info,
     tracing_subscriber::fmt::format::FmtSpan,
-    deadpool_redis::{Config, Runtime},
 };
 
 build_info::build_info!(fn build_info);
@@ -35,7 +35,6 @@ build_info::build_info!(fn build_info);
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    
     let mut cfg = Config::from_url(config.clone().attestation_cache_url.unwrap()); // TODO: remove unwrap
     let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap(); // TODO: remove unwrap
 
@@ -116,7 +115,10 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
 
     let app = Router::new()
         .route("/health", get(handlers::health::handler))
-        .route("/attestation/:attestation_id", get(handlers::attestation::get))
+        .route(
+            "/attestation/:attestation_id",
+            get(handlers::attestation::get),
+        )
         .route("/attestation", post(handlers::attestation::post))
         .layer(global_middleware)
         .with_state(state_arc);

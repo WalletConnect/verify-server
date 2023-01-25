@@ -21,7 +21,10 @@ pub struct AppState {
 build_info::build_info!(fn build_info);
 
 impl AppState {
-    pub fn new(config: Configuration, attestation_store: AttestationStoreArc) -> crate::Result<AppState> {
+    pub fn new(
+        config: Configuration,
+        attestation_store: AttestationStoreArc,
+    ) -> crate::Result<AppState> {
         let build_info: &BuildInfo = build_info();
 
         Ok(AppState {
