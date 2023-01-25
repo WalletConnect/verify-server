@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.4.0 - 2023-01-25
+#### Features
+- remove postgres - (bdb4923) - Derek
+- - -
+
 ## v0.3.0 - 2023-01-25
 #### Bug Fixes
 - comment out clopp - (39ffd93) - Derek
