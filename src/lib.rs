@@ -35,7 +35,7 @@ build_info::build_info!(fn build_info);
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    let mut cfg = Config::from_url(config.clone().attestation_cache_url.unwrap()); // TODO: remove unwrap
+    let cfg = Config::from_url(config.clone().attestation_cache_url);
     let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap(); // TODO: remove unwrap
 
     let mut state = AppState::new(config, Arc::new(pool))?;

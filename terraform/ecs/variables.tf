@@ -10,7 +10,7 @@ variable "image" {
   type = string
 }
 
-variable "database_url" {
+variable "redis_url" {
   type      = string
   sensitive = true
 }
