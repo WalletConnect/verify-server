@@ -44,5 +44,5 @@ pub async fn post(
         .set_attestation(attestation_id, origin)
         .await
         .unwrap();
-    (StatusCode::OK, format!("OK test"))
+    (StatusCode::OK, "OK test".to_string())
 }

@@ -27,12 +27,12 @@ impl AttestationStore for deadpool_redis::Pool {
     async fn set_attestation(&self, id: &str, origin: &str) -> stores::Result<()> {
         self.get()
             .await
-            .map_err(|e| StoreError::Cache(e.into()))?
+            .map_err(|e| StoreError::Cache(e))?
             .set(id, origin)
             .await?;
         self.get()
             .await
-            .map_err(|e| StoreError::Cache(e.into()))?
+            .map_err(|e| StoreError::Cache(e))?
             .expire::<_, usize>(id, Duration::from_secs(300).as_millis() as usize)
             .await?;
         Ok(())
@@ -42,7 +42,7 @@ impl AttestationStore for deadpool_redis::Pool {
         let origin = self
             .get()
             .await
-            .map_err(|e| StoreError::Cache(e.into()))?
+            .map_err(|e| StoreError::Cache(e))?
             .get(id)
             .await?;
         Ok(origin)

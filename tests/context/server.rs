@@ -33,6 +33,7 @@ impl RustHttpStarter {
                     database_url: "postgres://postgres@localhost:5432/postgres".into(),
                     telemetry_enabled: None,
                     telemetry_grpc_url: None,
+                    attestation_cache_url: Some("redis://localhost:6379/0".into()),
                     is_test: true,
                 };
 
