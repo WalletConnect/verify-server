@@ -2,6 +2,18 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.3.0 - 2023-01-25
+#### Bug Fixes
+- comment out clopp - (39ffd93) - Derek
+- fmt - (5dd9c16) - Derek
+#### Features
+- tests and clippy - (c25b380) - Derek
+- add justfile - (fef5cde) - Derek
+- getting/setting attestion works - (169e627) - Derek
+- integrate Redis - (2c90652) - Derek
+- implement attestation endpoint - (7359e24) - Derek
+- - -
+
 ## v0.2.0 - 2023-01-23
 #### Bug Fixes
 - wrong repository targeted - (e8dd6b6) - Derek
