@@ -40,12 +40,12 @@ impl AttestationStore for deadpool_redis::Pool {
             .await?;
         Ok(())
     }
-    async fn get_attestation(&self, _id: &str) -> stores::Result<String> {
+    async fn get_attestation(&self, id: &str) -> stores::Result<String> {
         let origin = self
             .get()
             .await
             .map_err(|e| StoreError::Cache(e.into()))?
-            .get::<_, String>("id")
+            .get(id)
             .await?;
         Ok(origin)
     }
