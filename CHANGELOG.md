@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.5.0 - 2023-01-25
+#### Bug Fixes
+- fmt - (d9fd108) - Derek
+#### Features
+- deploy redis - (0aa64c8) - Derek
+- - -
+
 ## v0.4.0 - 2023-01-25
 #### Features
 - remove postgres - (bdb4923) - Derek
