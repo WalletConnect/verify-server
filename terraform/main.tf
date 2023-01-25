@@ -70,6 +70,18 @@ data "aws_ecr_repository" "repository" {
   name = "bouncer"
 }
 
+module "redis" {
+  source = "./redis"
+
+  redis_name                     = "${terraform.workspace}-${local.app_name}"
+  app_name                       = local.app_name
+  node_type                      = "cache.m6g.large"
+  vpc_id                         = module.vpc.vpc_id
+  allowed_egress_cidr_blocks     = [module.vpc.vpc_cidr_block]
+  allowed_ingress_cidr_blocks    = [module.vpc.vpc_cidr_block]
+  private_subnets                = module.vpc.private_subnets
+}
+
 module "ecs" {
   source = "./ecs"
 
@@ -86,4 +98,5 @@ module "ecs" {
   route53_zone_id     = module.dns.zone_id
   vpc_cidr            = module.vpc.vpc_cidr_block
   vpc_id              = module.vpc.vpc_id
+  redis_url           = module.redis.endpoint
 }
