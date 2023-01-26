@@ -43,4 +43,13 @@ describe('verify', () => {
       expect(resp.data.origin).toBe('localhost')
     })
   })
+  describe('Enclave', () => {
+    const url = `${BASE_URL}`
+
+    it('get the enclave', async () => {
+      let resp: any = await axios.get(`${url}/someProjectId`)
+
+      expect(resp.status).toBe(200)
+    })
+  })
 })
