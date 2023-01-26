@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.6.0 - 2023-01-26
+#### Features
+- add enclave - (09d9227) - Derek
+- - -
+
 ## v0.5.0 - 2023-01-25
 #### Bug Fixes
 - fmt - (d9fd108) - Derek
