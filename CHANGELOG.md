@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.10.1 - 2023-01-31
+#### Bug Fixes
+- re-adds `/attestation` POST req route - (854439d) - Gancho Radkov
+- - -
+
 ## v0.10.0 - 2023-01-31
 #### Features
 - adds `content-type: json` to POST req headers - (81446d8) - Gancho Radkov
