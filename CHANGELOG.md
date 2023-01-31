@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.11.0 - 2023-01-31
+#### Bug Fixes
+- fmt - (82fb3b3) - Derek
+#### Features
+- allow cors on get attestation - (61019c6) - Derek
+- - -
+
 ## v0.10.1 - 2023-01-31
 #### Bug Fixes
 - re-adds `/attestation` POST req route - (854439d) - Gancho Radkov
