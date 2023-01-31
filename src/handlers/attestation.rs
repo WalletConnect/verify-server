@@ -1,3 +1,5 @@
+use hyper::header;
+
 use {
     crate::state::AppState,
     axum::{
@@ -30,7 +32,7 @@ pub async fn get(
         attestation_id: attestation_id.clone(),
     };
 
-    Json(resp)
+    ([(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")], Json(resp))
 }
 
 pub async fn post(
@@ -44,5 +46,5 @@ pub async fn post(
         .set_attestation(attestation_id, origin)
         .await
         .unwrap();
-    (StatusCode::OK, "OK test".to_string())
+    (StatusCode::OK, "OK".to_string())
 }
