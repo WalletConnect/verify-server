@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.8.0 - 2023-01-31
+#### Features
+- updates gist url - (d7861f8) - Gancho Radkov
+- - -
+
 ## v0.7.0 - 2023-01-30
 #### Features
 - serve enclave - (c2859d4) - Derek
