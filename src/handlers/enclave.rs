@@ -13,7 +13,7 @@ pub async fn handler(
 ) -> impl IntoResponse {
     match project_id.as_str() {
         "index.js" => {
-            let resp = reqwest::get("https://gist.githubusercontent.com/pedrouid/4ceb1e95e39728ab52121128337315b3/raw/dd79085b1f67442b2cb658165753707576270a00/index.js")
+            let resp = reqwest::get("https://gist.githubusercontent.com/ganchoradkov/85f747268696d2b7585292b0b40f9d43/raw/328199c208ad09faf33f4db55e9fdd36e75506bb/index.js")
                 .await.unwrap()
                 .text()
                 .await.unwrap();
