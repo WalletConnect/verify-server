@@ -1,5 +1,3 @@
-use hyper::header;
-
 use {
     crate::state::AppState,
     axum::{
@@ -7,6 +5,7 @@ use {
         http::StatusCode,
         response::IntoResponse,
     },
+    hyper::header,
     serde::{Deserialize, Serialize},
     std::sync::Arc,
 };
