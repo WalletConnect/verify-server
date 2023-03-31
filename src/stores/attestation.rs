@@ -1,17 +1,9 @@
 use {
     super::StoreError,
-    crate::{
-        handlers::attestation::AttestationBody,
-        stores::{self, StoreError::NotFound},
-    },
+    crate::stores,
     async_trait::async_trait,
-    deadpool_redis::{
-        redis::{cmd, AsyncCommands, FromRedisValue},
-        Config,
-        Runtime,
-    },
+    deadpool_redis::redis::AsyncCommands,
     std::{sync::Arc, time::Duration},
-    tracing::error,
 };
 
 pub type AttestationStoreArc = Arc<dyn AttestationStore + Send + Sync + 'static>;
