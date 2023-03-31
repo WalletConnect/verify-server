@@ -52,4 +52,13 @@ describe('verify', () => {
       expect(resp.status).toBe(200)
     })
   })
+  describe('index.js', () => {
+    const url = `${BASE_URL}`
+
+    it('get the enclave', async () => {
+      let resp: any = await axios.get(`${url}/index.js`)
+
+      expect(resp.status).toBe(200)
+    })
+  })
 })
