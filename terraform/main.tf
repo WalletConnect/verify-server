@@ -85,21 +85,20 @@ module "redis" {
 module "ecs" {
   source = "./ecs"
 
-  app_name            = "${terraform.workspace}-${local.app_name}"
-  prometheus_endpoint = aws_prometheus_workspace.prometheus.prometheus_endpoint
-  image               = "${data.aws_ecr_repository.repository.repository_url}:${local.version}"
-  acm_certificate_arn = module.dns.certificate_arn
-  cpu                 = 512
-  fqdn                = local.fqdn
-  memory              = 1024
-  private_subnets     = module.vpc.private_subnets
-  public_subnets      = module.vpc.public_subnets
-  region              = var.region
-  route53_zone_id     = module.dns.zone_id
-  vpc_cidr            = module.vpc.vpc_cidr_block
-  vpc_id              = module.vpc.vpc_id
-  redis_url           = module.redis.endpoint
-  
+  app_name                    = "${terraform.workspace}-${local.app_name}"
+  prometheus_endpoint         = aws_prometheus_workspace.prometheus.prometheus_endpoint
+  image                       = "${data.aws_ecr_repository.repository.repository_url}:${local.version}"
+  acm_certificate_arn         = module.dns.certificate_arn
+  cpu                         = 512
+  fqdn                        = local.fqdn
+  memory                      = 1024
+  private_subnets             = module.vpc.private_subnets
+  public_subnets              = module.vpc.public_subnets
+  region                      = var.region
+  route53_zone_id             = module.dns.zone_id
+  vpc_cidr                    = module.vpc.vpc_cidr_block
+  vpc_id                      = module.vpc.vpc_id
+  redis_url                   = module.redis.endpoint
   project_registry_url        = var.project_registry_url
   project_registry_auth_token = var.project_registry_auth_token
 }
