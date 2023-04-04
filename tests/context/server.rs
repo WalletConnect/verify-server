@@ -33,6 +33,8 @@ impl RustHttpStarter {
                     telemetry_enabled: None,
                     telemetry_grpc_url: None,
                     attestation_cache_url: "redis://localhost:6379/0".into(),
+                    project_registry_url: "".into(),
+                    project_registry_auth_token: "".into(),
                     is_test: true,
                 };
 
