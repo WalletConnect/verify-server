@@ -1,7 +1,8 @@
-use async_trait::async_trait;
-use cerberus::registry::RegistryHttpClient;
-
-use super::{ProjectData, ProjectRegistry, Result};
+use {
+    super::{ProjectData, ProjectRegistry, Result},
+    async_trait::async_trait,
+    cerberus::registry::RegistryHttpClient,
+};
 
 #[derive(Debug)]
 struct Proxy {

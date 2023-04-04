@@ -5,9 +5,6 @@ pub mod project_registry;
 mod handlers;
 mod state;
 
-pub use attestation_store::AttestationStore;
-pub use project_registry::ProjectRegistry;
-
 use {
     crate::{
         config::Configuration,
@@ -34,6 +31,7 @@ use {
     tracing::info,
     tracing_subscriber::fmt::format::FmtSpan,
 };
+pub use {attestation_store::AttestationStore, project_registry::ProjectRegistry};
 
 build_info::build_info!(fn build_info);
 
@@ -110,12 +108,9 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
             .with_description("This is an example counter")
             .init();
 
-        state.set_telemetry(
-            tracer,
-            Metrics {
-                example: example_counter,
-            },
-        )
+        state.set_telemetry(tracer, Metrics {
+            example: example_counter,
+        })
     } else if !state.config.is_test {
         // Only log to console if telemetry disabled
         tracing_subscriber::fmt()

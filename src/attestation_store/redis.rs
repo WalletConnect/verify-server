@@ -1,9 +1,9 @@
-use anyhow::Context as _;
-use async_trait::async_trait;
-use deadpool_redis::redis::AsyncCommands as _;
-use deadpool_redis::{Connection, Pool, Runtime};
-
-use super::{AttestationStore, Result};
+use {
+    super::{AttestationStore, Result},
+    anyhow::Context as _,
+    async_trait::async_trait,
+    deadpool_redis::{redis::AsyncCommands as _, Connection, Pool, Runtime},
+};
 
 const ATTESTATION_TTL_SECS: usize = 300;
 
