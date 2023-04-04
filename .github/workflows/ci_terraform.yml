@@ -17,6 +17,9 @@ concurrency:
   # If there is already a workflow running for the same pull request, cancel it
   cancel-in-progress: ${{ github.event.type == 'PullRequest' }}
 
+env:
+  TF_VAR_project_registry_auth_token: ${{ secrets.PROJECT_REGISTRY_AUTH_TOKEN }}
+
 jobs:
   fmt:
     runs-on: ubuntu-latest

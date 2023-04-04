@@ -99,4 +99,7 @@ module "ecs" {
   vpc_cidr            = module.vpc.vpc_cidr_block
   vpc_id              = module.vpc.vpc_id
   redis_url           = module.redis.endpoint
+  
+  project_registry_url        = var.project_registry_url
+  project_registry_auth_token = var.project_registry_auth_token
 }

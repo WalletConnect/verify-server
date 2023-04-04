@@ -15,6 +15,15 @@ variable "redis_url" {
   sensitive = true
 }
 
+variable "project_registry_url" {
+  type = string
+}
+
+variable "project_registry_auth_token" {
+  type      = string
+  sensitive = true
+}
+
 variable "prometheus_endpoint" {
   type = string
 }

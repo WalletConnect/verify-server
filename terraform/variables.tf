@@ -1,3 +1,12 @@
+variable "project_registry_url" {
+  type = string
+}
+
+variable "project_registry_auth_token" {
+  type      = string
+  sensitive = true
+}
+
 variable "region" {
   type    = string
   default = "eu-central-1"
