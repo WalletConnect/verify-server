@@ -1,5 +1,5 @@
 use {
-    crate::state::AppState,
+    crate::{state::AppState, Infra, ProjectRegistry as _},
     axum::{
         extract::{Path, State},
         response::{Html, IntoResponse},
@@ -20,15 +20,22 @@ const INDEX_HTML: &str = r#"
 
 pub async fn handler(
     Path(path): Path<String>,
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState<impl Infra>>>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let body = match path.as_str() {
         "index.js" => download_iframe()
             .await
-            .map_err(|e| log::error!("Failed to download iframe: {}", e))
+            .map_err(|e| log::error!("Failed to download iframe: {e}"))
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
             .map(Html)?,
-        _ => Html(INDEX_HTML.into()),
+        id => state
+            .project_registry()
+            .project_data(id)
+            .await
+            .map_err(|e| log::error!("Failed to query ProjectData: {e}"))
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            .map(|_| Html(INDEX_HTML.into()))
+            .ok_or(StatusCode::NOT_FOUND)?,
     };
 
     let policy = "frame-ancestors https://react-wallet.walletconnect.com";
