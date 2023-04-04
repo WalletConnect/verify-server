@@ -55,6 +55,11 @@ describe('verify', () => {
       expect(policy).toMatch(new RegExp("^frame-ancestors"))
       expect(policy).toContain("https://react-wallet.walletconnect.com")
     })
+
+    it('non-existent project', async () => {
+      let resp: any = await axios.get(`${url}/someProjectId`)
+      expect(resp.status).toBe(404)
+    })
   })
   describe('index.js', () => {
     const url = `${BASE_URL}`
