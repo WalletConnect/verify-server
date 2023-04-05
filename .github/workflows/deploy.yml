@@ -1,18 +1,17 @@
 name: deploy
+
 on:
   workflow_dispatch:
     inputs:
       name: environment
       type: choice
-      options: 
-       - dev
-       - staging 
-  workflow_call:
+      options:
+        - dev
+        - staging
+  workflow_call: null
 
 concurrency:
-  # Only allow for one action to run at once, queue any others
   group: cd
-  # Don't cancel existing
   cancel-in-progress: false
 
 jobs:
@@ -24,7 +23,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - id: terraform
         uses: WalletConnect/actions/actions/deploy-terraform/@master
         env:
