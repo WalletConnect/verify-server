@@ -3,11 +3,12 @@ name: deploy
 on:
   workflow_dispatch:
     inputs:
-      name: environment
-      type: choice
-      options:
-        - dev
-        - staging
+      environment:
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
   workflow_call: null
 
 concurrency:
