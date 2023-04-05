@@ -21,8 +21,6 @@ jobs:
     environment:
       name: ${{ inputs.environment }}
       url: https://${{ inputs.environment }}.verify.walletconnect.com/health
-    needs:
-      - get-version
     steps:
       - name: Checkout
         uses: actions/checkout@v3
