@@ -41,12 +41,15 @@ pub type Error = anyhow::Error;
 pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
     let attestation_store = attestation_store::redis::new(config.attestation_cache_url.clone())
         .context("Failed to initialize AttestationStore")?;
+    let cache = project_registry::cache::redis::new(config.project_registry_cache_url.clone())
+        .context("Failed to initialize project_registry::Cache")?;
 
     let project_registry = project_registry::cloud::new(
         config.project_registry_url.clone(),
         &config.project_registry_auth_token,
     )
     .context("Failed to initialize ProjectRegistry")?;
+    let project_registry = project_registry::with_caching(project_registry, cache);
 
     let mut state = AppState::new(config, (attestation_store, project_registry));
 

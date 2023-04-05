@@ -20,6 +20,7 @@ deadpool-redis = "0.10"
 
 # Seralisation
 serde = { version = "1.0", features = ["derive"] }
+rmp-serde = "1.0"
 
 # Env Vars
 dotenv = "0.15"
