@@ -1,0 +1,36 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+  workflow_call: null
+
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: https://${{ inputs.environment }}.verify.walletconnect.com/health
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - id: terraform
+        uses: WalletConnect/actions/actions/deploy-terraform/@master
+        env:
+          TF_VAR_image_version: ${{ github.ref_name }}.${{ github.sha }}
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+          environment: ${{inputs.environment}}
+          app-name: ${{ github.event.repository.name }}
