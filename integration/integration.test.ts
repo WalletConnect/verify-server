@@ -50,6 +50,23 @@ describe('verify', () => {
       let resp: any = await axios.get(`${url}/someProjectId`)
 
       expect(resp.status).toBe(200)
+
+      let policy = resp.headers["content-security-policy"]
+      expect(policy).toMatch(new RegExp("^frame-ancestors"))
+      expect(policy).toContain("https://react-app.walletconnect.com")
+    })
+  })
+  describe('index.js', () => {
+    const url = `${BASE_URL}`
+
+    it('get index.js', async () => {
+      let resp: any = await axios.get(`${url}/index.js`)
+
+      expect(resp.status).toBe(200)
+
+      let policy = resp.headers["content-security-policy"]
+      expect(policy).toMatch(new RegExp("^frame-ancestors"))
+      expect(policy).toContain("https://react-app.walletconnect.com")
     })
   })
 })
