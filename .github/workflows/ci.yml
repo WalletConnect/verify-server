@@ -126,6 +126,6 @@ jobs:
 
   kick-off-release:
     needs: [tasks]
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && !startsWith(github.event.head_commit.message, 'chore')
     uses: ./.github/workflows/release.yml
     secrets: inherit
