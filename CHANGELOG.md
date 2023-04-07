@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.12.0 - 2023-04-07
+#### Features
+- Add hardcoded Content-Security-Policy header (#9) - (92ad690) - xDarksome
+#### Miscellaneous Chores
+- Add manual deploy workflow (#13) - (cb00962) - xDarksome
+- Fix compiler warnings - (0bc9a8b) - xDarksome
+- Fix compiler warnings - (3f423aa) - Darksome
+- - -
+
 ## v0.11.0 - 2023-01-31
 #### Bug Fixes
 - fmt - (82fb3b3) - Derek

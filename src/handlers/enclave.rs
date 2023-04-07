@@ -38,7 +38,7 @@ pub async fn handler(
             .ok_or(StatusCode::NOT_FOUND)?,
     };
 
-    let policy = "frame-ancestors https://react-wallet.walletconnect.com";
+    let policy = "frame-ancestors https://react-app.walletconnect.com";
 
     Ok(([(header::CONTENT_SECURITY_POLICY, policy)], body))
 }
