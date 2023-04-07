@@ -53,7 +53,7 @@ describe('verify', () => {
 
       let policy = resp.headers["content-security-policy"]
       expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-wallet.walletconnect.com")
+      expect(policy).toContain("https://react-app.walletconnect.com")
     })
   })
   describe('index.js', () => {
@@ -66,7 +66,7 @@ describe('verify', () => {
 
       let policy = resp.headers["content-security-policy"]
       expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-wallet.walletconnect.com")
+      expect(policy).toContain("https://react-app.walletconnect.com")
     })
   })
 })
