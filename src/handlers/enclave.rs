@@ -31,7 +31,7 @@ pub async fn handler(
         _ => Html(INDEX_HTML.into()),
     };
 
-    let policy = "frame-ancestors https://react-wallet.walletconnect.com";
+    let policy = "frame-ancestors https://react-app.walletconnect.com";
 
     Ok(([(header::CONTENT_SECURITY_POLICY, policy)], body))
 }
