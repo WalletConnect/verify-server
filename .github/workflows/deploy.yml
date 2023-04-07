@@ -61,6 +61,8 @@ jobs:
           cache-to: type=gha,mode=max
   deploy:
     runs-on: ubuntu-latest
+    needs:
+      - build-container
     environment:
       name: ${{ inputs.environment }}
       url: https://${{ inputs.environment }}.verify.walletconnect.com/health
