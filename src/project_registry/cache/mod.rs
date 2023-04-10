@@ -14,7 +14,7 @@ fn deserialize_data(bytes: &[u8]) -> Result<Option<ProjectData>> {
 }
 
 #[async_trait]
-pub trait Cache: Send + Sync {
+pub trait Cache: Clone + Send + Sync + 'static {
     async fn set(&self, project_id: &str, data: &Option<ProjectData>) -> Result<()>;
     async fn get(&self, project_id: &str) -> Result<Option<ProjectData>>;
 }

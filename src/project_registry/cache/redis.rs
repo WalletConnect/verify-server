@@ -8,6 +8,7 @@ use {
 
 const TTL_SECS: usize = 300;
 
+#[derive(Clone)]
 struct Adapter {
     redis_conn_pool: Pool,
 }
