@@ -15,6 +15,9 @@ concurrency:
   group: cd
   cancel-in-progress: false
 
+env:
+  TF_VAR_project_registry_auth_token: ${{ secrets.PROJECT_REGISTRY_AUTH_TOKEN }}
+
 jobs:
   build-container:
     runs-on:

@@ -1,18 +1,20 @@
-use axum::routing::post;
-
+pub mod attestation_store;
 pub mod config;
-pub mod error;
+pub mod project_registry;
+
 mod handlers;
 mod state;
-mod stores;
 
 use {
     crate::{
         config::Configuration,
         state::{AppState, Metrics},
     },
-    axum::{routing::get, Router},
-    deadpool_redis::{Config, Runtime},
+    anyhow::Context as _,
+    axum::{
+        routing::{get, post},
+        Router,
+    },
     opentelemetry::{
         sdk::{
             metrics::selectors,
@@ -29,16 +31,24 @@ use {
     tracing::info,
     tracing_subscriber::fmt::format::FmtSpan,
 };
+pub use {attestation_store::AttestationStore, project_registry::ProjectRegistry};
 
 build_info::build_info!(fn build_info);
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+pub type Result<T> = std::result::Result<T, Error>;
+pub type Error = anyhow::Error;
 
 pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    let cfg = Config::from_url(config.clone().attestation_cache_url);
-    let pool = cfg.create_pool(Some(Runtime::Tokio1)).unwrap(); // TODO: remove unwrap
+    let attestation_store = attestation_store::redis::new(config.attestation_cache_url.clone())
+        .context("Failed to initialize AttestationStore")?;
 
-    let mut state = AppState::new(config, Arc::new(pool))?;
+    let project_registry = project_registry::cloud::new(
+        config.project_registry_url.clone(),
+        &config.project_registry_auth_token,
+    )
+    .context("Failed to initialize ProjectRegistry")?;
+
+    let mut state = AppState::new(config, (attestation_store, project_registry));
 
     // Telemetry
     if state.config.telemetry_enabled.unwrap_or(false) {
@@ -72,7 +82,8 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
                         ),
                     ])),
             )
-            .install_batch(opentelemetry::runtime::Tokio)?;
+            .install_batch(opentelemetry::runtime::Tokio)
+            .context("Failed to install opentelemetry tracer")?;
 
         let metrics_exporter = opentelemetry_otlp::new_exporter()
             .tonic()
@@ -86,7 +97,8 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
             .with_period(Duration::from_secs(3))
             .with_timeout(Duration::from_secs(10))
             .with_aggregator_selector(selectors::simple::Selector::Exact)
-            .build()?;
+            .build()
+            .context("Failed to build opentelemetry otlp pipeline")?;
 
         opentelemetry::global::set_meter_provider(meter_provider.provider());
 
@@ -132,4 +144,30 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
     }
 
     Ok(())
+}
+
+/// Infrastucture dependencies of this service.
+pub trait Infra {
+    type AttestationStore: AttestationStore;
+    type ProjectRegistry: ProjectRegistry;
+
+    fn attestation_store(&self) -> &Self::AttestationStore;
+    fn project_registry(&self) -> &Self::ProjectRegistry;
+}
+
+impl<A, P> Infra for (A, P)
+where
+    A: AttestationStore,
+    P: ProjectRegistry,
+{
+    type AttestationStore = A;
+    type ProjectRegistry = P;
+
+    fn attestation_store(&self) -> &Self::AttestationStore {
+        &self.0
+    }
+
+    fn project_registry(&self) -> &Self::ProjectRegistry {
+        &self.1
+    }
 }

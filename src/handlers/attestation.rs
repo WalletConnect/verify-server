@@ -1,5 +1,5 @@
 use {
-    crate::state::AppState,
+    crate::{state::AppState, AttestationStore as _, Infra},
     axum::{
         extract::{Json, Path, State as StateExtractor},
         http::StatusCode,
@@ -19,10 +19,10 @@ pub struct AttestationBody {
 
 pub async fn get(
     Path(attestation_id): Path<String>,
-    StateExtractor(state): StateExtractor<Arc<AppState>>,
+    StateExtractor(state): StateExtractor<Arc<AppState<impl Infra>>>,
 ) -> impl IntoResponse {
     let attestation = state
-        .attestation_store
+        .attestation_store()
         .get_attestation(&attestation_id)
         .await
         .unwrap();
@@ -35,13 +35,13 @@ pub async fn get(
 }
 
 pub async fn post(
-    StateExtractor(state): StateExtractor<Arc<AppState>>,
+    StateExtractor(state): StateExtractor<Arc<AppState<impl Infra>>>,
     body: Json<AttestationBody>,
 ) -> impl IntoResponse {
     let attestation_id = &body.attestation_id;
     let origin = &body.origin;
     state
-        .attestation_store
+        .attestation_store()
         .set_attestation(attestation_id, origin)
         .await
         .unwrap();

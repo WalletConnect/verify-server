@@ -16,6 +16,9 @@ pub struct Configuration {
 
     // Redis
     pub attestation_cache_url: String,
+
+    pub project_registry_url: String,
+    pub project_registry_auth_token: String,
 }
 
 impl Configuration {

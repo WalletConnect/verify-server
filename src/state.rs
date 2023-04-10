@@ -1,5 +1,5 @@
 use {
-    crate::{stores::attestation::AttestationStoreArc, Configuration},
+    crate::{Configuration, Infra},
     build_info::BuildInfo,
     opentelemetry::{metrics::UpDownCounter, sdk::trace::Tracer},
     tracing_subscriber::prelude::*,
@@ -11,28 +11,26 @@ pub struct Metrics {
 }
 
 #[derive(Clone)]
-pub struct AppState {
+pub struct AppState<I> {
     pub config: Configuration,
     pub build_info: BuildInfo,
     pub metrics: Option<Metrics>,
-    pub attestation_store: AttestationStoreArc,
+
+    infra: I,
 }
 
 build_info::build_info!(fn build_info);
 
-impl AppState {
-    pub fn new(
-        config: Configuration,
-        attestation_store: AttestationStoreArc,
-    ) -> crate::Result<AppState> {
+impl<I> AppState<I> {
+    pub fn new(config: Configuration, infra: I) -> Self {
         let build_info: &BuildInfo = build_info();
 
-        Ok(AppState {
+        AppState {
             config,
             build_info: build_info.clone(),
             metrics: None,
-            attestation_store,
-        })
+            infra,
+        }
     }
 
     pub fn set_telemetry(&mut self, tracer: Tracer, metrics: Metrics) {
@@ -43,5 +41,15 @@ impl AppState {
             .init();
 
         self.metrics = Some(metrics);
+    }
+}
+
+impl<I: Infra> AppState<I> {
+    pub fn attestation_store(&self) -> &I::AttestationStore {
+        self.infra.attestation_store()
+    }
+
+    pub fn project_registry(&self) -> &I::ProjectRegistry {
+        self.infra.project_registry()
     }
 }
