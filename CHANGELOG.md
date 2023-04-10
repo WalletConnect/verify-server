@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.13.0 - 2023-04-10
+#### Features
+- Validate project ids using `cerberus` (#10) - (6512709) - xDarksome
+#### Miscellaneous Chores
+- Skip 'release' workflow for 'chore' commits - (2649f82) - xDarksome
+- - -
+
 ## v0.12.0 - 2023-04-07
 #### Features
 - Add hardcoded Content-Security-Policy header (#9) - (92ad690) - xDarksome
