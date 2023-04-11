@@ -1,7 +1,7 @@
 pub mod cache;
 pub mod cloud;
 
-use {async_trait::async_trait, ownage::own, tracing as log};
+use {async_trait::async_trait, tracing as log};
 pub use {cache::Cache, cerberus::project::ProjectData};
 
 #[async_trait]
@@ -39,16 +39,17 @@ where
 
         let data = self.registry.project_data(id).await?;
 
+        let cache = self.cache.clone();
+        let id = id.to_string();
+        let data_clone = data.clone();
+
         // Do not block on cache write.
-        tokio::spawn(own(
-            (&self.cache, id, &data),
-            |cache: C, id: String, data| async move {
-                cache
-                    .set(&id, &data)
-                    .await
-                    .map_err(|e| log::error!("Failed to cache ProjectData(id: {id}): {e}"))
-            },
-        ));
+        tokio::spawn(async move {
+            cache
+                .set(&id, &data_clone)
+                .await
+                .map_err(|e| log::error!("Failed to cache ProjectData(id: {id}): {e}"))
+        });
 
         Ok(data)
     }

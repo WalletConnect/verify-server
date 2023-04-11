@@ -158,7 +158,6 @@ dependencies = [
  "log",
  "opentelemetry",
  "opentelemetry-otlp",
- "ownage",
  "reqwest",
  "rmp-serde",
  "serde",
@@ -1212,12 +1211,6 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
-
-[[package]]
-name = "ownage"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62a68e39d65cdfc38f4e3ea1372801283f702061ab992910329896e6c8a414be"
 
 [[package]]
 name = "parking_lot"

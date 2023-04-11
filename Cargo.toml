@@ -41,7 +41,6 @@ thiserror = "1.0"
 async-trait = "0.1"
 tap = "1.0"
 reqwest = "0.11"
-ownage = "0.1"
 
 [dev-dependencies]
 test-context = "0.1"
