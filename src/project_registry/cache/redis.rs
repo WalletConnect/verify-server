@@ -1,5 +1,5 @@
 use {
-    super::{Cache, ProjectData, Result},
+    super::{Cache, Output, ProjectData, Result},
     crate::project_registry::cache,
     anyhow::Context as _,
     async_trait::async_trait,
@@ -41,14 +41,21 @@ impl Cache for Adapter {
             .context("SETEX operation failed")
     }
 
-    async fn get(&self, project_id: &str) -> Result<Option<ProjectData>> {
-        let bytes: Vec<u8> = self
+    async fn get(&self, project_id: &str) -> Result<Output> {
+        // Careful: Specifying `Vec<u8>` here instead of `Option<Vec<u8>>` works as well
+        // (IMO it shouldn't).
+        let output: Option<Vec<u8>> = self
             .get_conn()
             .await?
             .get(project_id)
             .await
             .context("GET operation failed")?;
 
-        cache::deserialize_data(bytes.as_slice()).context("Failed to deserialize ProjectData")
+        Ok(match output {
+            Some(bytes) => cache::deserialize_data(bytes.as_slice())
+                .map(Output::Hit)
+                .context("Failed to deserialize ProjectData")?,
+            None => Output::Miss,
+        })
     }
 }

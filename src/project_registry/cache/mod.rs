@@ -16,5 +16,12 @@ fn deserialize_data(bytes: &[u8]) -> Result<Option<ProjectData>> {
 #[async_trait]
 pub trait Cache: Clone + Send + Sync + 'static {
     async fn set(&self, project_id: &str, data: &Option<ProjectData>) -> Result<()>;
-    async fn get(&self, project_id: &str) -> Result<Option<ProjectData>>;
+    async fn get(&self, project_id: &str) -> Result<Output>;
+}
+
+// Option<Option<_>> is gross and I just shot myself in the foot with it.
+// TODO: Come up with a better name
+pub enum Output {
+    Hit(Option<ProjectData>),
+    Miss,
 }

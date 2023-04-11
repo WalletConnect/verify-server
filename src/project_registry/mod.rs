@@ -28,15 +28,14 @@ where
     C: Cache,
 {
     async fn project_data(&self, id: &str) -> Result<Option<ProjectData>> {
-        let cached = self
-            .cache
-            .get(id)
-            .await
-            .map_err(|e| log::error!("Failed to get ProjectData(id: {id}) from cache: {e}"))
-            .unwrap_or_default();
-        if let Some(data) = cached {
-            return Ok(Some(data));
-        }
+        match self.cache.get(id).await {
+            Ok(cache::Output::Hit(data)) => {
+                log::debug!("Cache hit: {id}");
+                return Ok(data);
+            }
+            Ok(cache::Output::Miss) => log::info!("Cache miss: {id}"),
+            Err(e) => log::error!("Failed to get ProjectData(id: {id}) from cache: {e}"),
+        };
 
         let data = self.registry.project_data(id).await?;
 
