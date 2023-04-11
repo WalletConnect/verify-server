@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.14.0 - 2023-04-11
+#### Features
+- Implement project data cache (#12) - (9917d98) - xDarksome
+#### Miscellaneous Chores
+- Remove 'kick-off-release' from ci_terraform.yml - (632cdac) - xDarksome
+- - -
+
 ## v0.13.0 - 2023-04-10
 #### Features
 - Validate project ids using `cerberus` (#10) - (6512709) - xDarksome
