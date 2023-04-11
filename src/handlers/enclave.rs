@@ -18,50 +18,42 @@ const INDEX_HTML: &str = r#"
 </html>
 "#;
 
-pub async fn handler(
-    Path(path): Path<String>,
+pub async fn project_handler(
+    Path(id): Path<String>,
     State(state): State<Arc<AppState<impl Infra>>>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let body = match path.as_str() {
-        "index.js" => download_iframe()
-            .await
-            .map_err(|e| log::error!("Failed to download iframe: {e}"))
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
-            .map(Html)?,
-        id => state
-            .project_registry()
-            .project_data(id)
-            .await
-            .map_err(|e| log::error!("Failed to query ProjectData: {e}"))
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-            .map(|_| Html(INDEX_HTML.into()))
-            .ok_or(StatusCode::NOT_FOUND)?,
-    };
+    let verified_domain = state
+        .project_registry()
+        .project_data(&id)
+        .await
+        .map_err(|e| log::error!("Failed to query ProjectData: {e}"))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .and_then(|data| data.verified_domain)
+        .ok_or(StatusCode::NOT_FOUND)?;
 
-    let policy = "frame-ancestors https://react-app.walletconnect.com";
+    // Project registry is expected to return domains in the form of `{name}.{TLD}`.
+    // By appending `https://*.` we are allowing the iframe to be served to any
+    // subdomain over HTTPS.
+    let policy = format!("frame-ancestors https://*.{verified_domain}");
 
-    Ok(([(header::CONTENT_SECURITY_POLICY, policy)], body))
+    let headers = [(header::CONTENT_SECURITY_POLICY, policy)];
+
+    Ok((headers, Html(INDEX_HTML)))
 }
 
-// TODO: bundle it / download during initialization
-async fn download_iframe() -> Result<String, DownloadIframeError> {
-    const URL: &str = "https://gist.githubusercontent.com/ganchoradkov/\
-        85f747268696d2b7585292b0b40f9d43/raw/85de5890258d08dcc5e3f4f078106883f62d43b2/index.js";
+const INDEX_JS: &str = r#"
+// event subscribed by Verify Enclave
+window.addEventListener("message", (event) => {
+    const attestationId = event.data
+    const origin = event.origin
+    if (!attestationId) return
+    fetch(`${window.location.protocol}//${window.location.host}/attestation`, {
+        method: "POST",
+        body: JSON.stringify({ attestationId, origin }),
+        headers: new Headers({ 'content-type': 'application/json' })
+    })
+})"#;
 
-    let resp = reqwest::get(URL).await?;
-    match resp.status() {
-        StatusCode::OK => {}
-        other => return Err(DownloadIframeError::UnexpectedStatusCode(other)),
-    };
-
-    Ok(resp.text().await?)
-}
-
-#[derive(Debug, thiserror::Error)]
-enum DownloadIframeError {
-    #[error("Request failed: {0}")]
-    Reqwest(#[from] reqwest::Error),
-
-    #[error("Unexpected status code: {0}")]
-    UnexpectedStatusCode(StatusCode),
+pub async fn index_js_handler() -> impl IntoResponse {
+    Html(INDEX_JS)
 }

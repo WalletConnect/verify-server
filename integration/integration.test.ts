@@ -55,8 +55,7 @@ describe('verify', () => {
       expect(resp.status).toBe(200)
 
       let policy = resp.headers["content-security-policy"]
-      expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-app.walletconnect.com")
+      expect(policy).toBe("frame-ancestors https://*.walletconnect.com")
     })
 
     it('non-existent project', async () => {
@@ -69,12 +68,7 @@ describe('verify', () => {
 
     it('get index.js', async () => {
       let resp: any = await axios.get(`${url}/index.js`)
-
       expect(resp.status).toBe(200)
-
-      let policy = resp.headers["content-security-policy"]
-      expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-app.walletconnect.com")
     })
   })
 })

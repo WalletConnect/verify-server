@@ -134,7 +134,8 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
             "/attestation/:attestation_id",
             get(handlers::attestation::get),
         )
-        .route("/:project_id", get(handlers::enclave::handler))
+        .route("/index.js", get(handlers::enclave::index_js_handler))
+        .route("/:project_id", get(handlers::enclave::project_handler))
         .route("/attestation", post(handlers::attestation::post))
         .layer(global_middleware)
         .with_state(state_arc);

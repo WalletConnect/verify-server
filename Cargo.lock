@@ -299,7 +299,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.3.0#a1b1923853f775b02fa7fbfc094b87a4a47683f4"
+source = "git+https://github.com/WalletConnect/cerberus.git?branch=feat/add-homepage-and-dns-verification-status-to-project-data#fe2aef71058c6a8de8117f75a4dd750c3bd77dbc"
 dependencies = [
  "async-trait",
  "once_cell",
