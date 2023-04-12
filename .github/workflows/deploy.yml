@@ -48,7 +48,7 @@ jobs:
           flavor: |
             latest=auto
           tags: |
-            type=raw,value=${{ github.ref_name }}.${{ github.sha }}
+            type=raw,value=${{ github.sha }}
 
       # Setup Buildkit
       - name: Set up Docker Buildx
