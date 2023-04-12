@@ -75,7 +75,7 @@ jobs:
       - id: terraform
         uses: WalletConnect/actions/actions/deploy-terraform/@master
         env:
-          TF_VAR_image_version: ${{ github.ref_name }}.${{ github.sha }}
+          TF_VAR_image_version: ${{ github.sha }}
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
