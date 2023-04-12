@@ -37,6 +37,7 @@ impl RustHttpStarter {
                     project_registry_url: "".into(),
                     project_registry_auth_token: "".into(),
                     is_test: true,
+                    is_dev: true,
                 };
 
                 bouncer::bootstap(shutdown, config).await

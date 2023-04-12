@@ -86,6 +86,7 @@ module "ecs" {
   source = "./ecs"
 
   app_name                    = "${terraform.workspace}-${local.app_name}"
+  environment                 = terraform.workspace
   prometheus_endpoint         = aws_prometheus_workspace.prometheus.prometheus_endpoint
   image                       = "${data.aws_ecr_repository.repository.repository_url}:${local.version}"
   acm_certificate_arn         = module.dns.certificate_arn

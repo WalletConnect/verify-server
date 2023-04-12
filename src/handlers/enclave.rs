@@ -34,7 +34,13 @@ pub async fn project_handler(
     // Project registry is expected to return domains in the form of `{name}.{TLD}`.
     // By appending `https://*.` we are allowing the iframe to be served to any
     // subdomain over HTTPS.
-    let policy = format!("frame-ancestors https://*.{verified_domain}");
+    let mut policy = format!("frame-ancestors https://*.{verified_domain}");
+
+    // We allow the iframe to be served to some additional domains in dev
+    // environmensts.
+    if state.config.is_dev {
+        policy.push_str(" https://*.walletconnect.com https://*.vercel.app *.localhost");
+    }
 
     let headers = [(header::CONTENT_SECURITY_POLICY, policy)];
 

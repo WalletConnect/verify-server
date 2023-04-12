@@ -20,6 +20,14 @@ pub struct Configuration {
 
     pub project_registry_url: String,
     pub project_registry_auth_token: String,
+
+    /// Indicates whether the service is being run in a dev environment.
+    ///
+    /// Setting this to `true` allows the Enclave to be served to
+    /// `*.walletconnect.com`, `*.vercel.app` and `*.localhost` regardless
+    /// of the verified domains of the project.
+    #[serde(default)]
+    pub is_dev: bool,
 }
 
 impl Configuration {
