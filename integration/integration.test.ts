@@ -61,7 +61,7 @@ describe('verify', () => {
       if (ENV === 'prod') {
         expect(policy).toBe("frame-ancestors https://*.walletconnect.com")
       } else {
-        expect(policy).toBe("frame-ancestors https://*.walletconnect.com https://*.walletconnect.com https://*.vercel.app *.localhost")
+        expect(policy).toBe("frame-ancestors https://*.walletconnect.com https://*.vercel.app *.localhost https://*.walletconnect.com")
       }
     })
 
