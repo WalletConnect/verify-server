@@ -1,157 +1,151 @@
 pub mod attestation_store;
-pub mod config;
+pub mod http_server;
 pub mod project_registry;
 
-mod handlers;
-mod state;
-
-use {
-    crate::{
-        config::Configuration,
-        state::{AppState, Metrics},
-    },
-    anyhow::Context as _,
-    axum::{
-        routing::{get, post},
-        Router,
-    },
-    opentelemetry::{
-        sdk::{
-            metrics::selectors,
-            trace::{self, IdGenerator, Sampler},
-            Resource,
-        },
-        util::tokio_interval_stream,
-        KeyValue,
-    },
-    opentelemetry_otlp::{Protocol, WithExportConfig},
-    std::{net::SocketAddr, sync::Arc, time::Duration},
-    tokio::{select, sync::broadcast},
-    tower::ServiceBuilder,
-    tracing::info,
-    tracing_subscriber::fmt::format::FmtSpan,
+pub use {
+    anyhow::Error, async_trait::async_trait, attestation_store::AttestationStore,
+    project_registry::ProjectRegistry,
 };
-pub use {attestation_store::AttestationStore, project_registry::ProjectRegistry};
+use {
+    derive_more::{AsRef, From},
+    serde::{Deserialize, Serialize},
+    std::sync::atomic::{AtomicU64, Ordering},
+    tap::TapFallible,
+    tracing::{error, warn},
+};
 
-build_info::build_info!(fn build_info);
+#[async_trait]
+pub trait Bouncer: Send + Sync + 'static {
+    /// Returns a list of [`UrlMatcher`]s for the project.
+    async fn get_url_matchers(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<UrlMatcher>, GetUrlMatchersError>;
 
-pub type Result<T> = std::result::Result<T, Error>;
-pub type Error = anyhow::Error;
+    async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
+    async fn get_attestation(&self, id: &str) -> Result<String, Error>;
+}
 
-pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    let attestation_store = attestation_store::redis::new(config.attestation_cache_url.clone())
-        .context("Failed to initialize AttestationStore")?;
-    let cache = project_registry::cache::redis::new(config.project_registry_cache_url.clone())
-        .context("Failed to initialize project_registry::Cache")?;
+#[derive(Debug, thiserror::Error)]
+pub enum GetUrlMatchersError {
+    #[error("UnknownProject")]
+    UnknownProject,
 
-    let project_registry = project_registry::cloud::new(
-        config.project_registry_url.clone(),
-        &config.project_registry_auth_token,
-    )
-    .context("Failed to initialize ProjectRegistry")?;
-    let project_registry = project_registry::with_caching(project_registry, cache);
+    #[error(transparent)]
+    Other(#[from] Error),
+}
 
-    let mut state = AppState::new(config, (attestation_store, project_registry));
+/// Matcher describing on which URLs a project is allowed to be served.
+#[derive(Clone, Debug)]
+pub struct UrlMatcher {
+    /// Matching URL should have this exact [`Protocol`].
+    pub protocol: Protocol,
 
-    // Telemetry
-    if state.config.telemetry_enabled.unwrap_or(false) {
-        let grpc_url = state
-            .config
-            .telemetry_grpc_url
-            .clone()
-            .unwrap_or_else(|| "http://localhost:4317".to_string());
+    /// When `Some` the matching URL should have this exact
+    /// [`SecondLevelDomain`]. When `None` the matching URL may have any
+    /// [`SecondLevelDomain`] or none.
+    pub sld: Option<SecondLevelDomain>,
 
-        let tracing_exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint(grpc_url.clone())
-            .with_timeout(Duration::from_secs(5))
-            .with_protocol(Protocol::Grpc);
+    /// Matching URL should have this exact [`TopLevelDomain`].
+    pub tld: TopLevelDomain,
+}
 
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(tracing_exporter)
-            .with_trace_config(
-                trace::config()
-                    .with_sampler(Sampler::AlwaysOn)
-                    .with_id_generator(IdGenerator::default())
-                    .with_max_events_per_span(64)
-                    .with_max_attributes_per_span(16)
-                    .with_max_events_per_span(16)
-                    .with_resource(Resource::new(vec![
-                        KeyValue::new("service.name", state.build_info.crate_info.name.clone()),
-                        KeyValue::new(
-                            "service.version",
-                            state.build_info.crate_info.version.clone().to_string(),
-                        ),
-                    ])),
-            )
-            .install_batch(opentelemetry::runtime::Tokio)
-            .context("Failed to install opentelemetry tracer")?;
+impl UrlMatcher {
+    pub fn localhost(protocol: Protocol) -> Self {
+        Self {
+            protocol,
+            sld: None,
+            tld: TopLevelDomain::localhost(),
+        }
+    }
+}
 
-        let metrics_exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint(grpc_url)
-            .with_timeout(Duration::from_secs(5))
-            .with_protocol(Protocol::Grpc);
+#[derive(Clone, Debug)]
+pub enum Protocol {
+    Http,
+    Https,
+}
 
-        let meter_provider = opentelemetry_otlp::new_pipeline()
-            .metrics(tokio::spawn, tokio_interval_stream)
-            .with_exporter(metrics_exporter)
-            .with_period(Duration::from_secs(3))
-            .with_timeout(Duration::from_secs(10))
-            .with_aggregator_selector(selectors::simple::Selector::Exact)
-            .build()
-            .context("Failed to build opentelemetry otlp pipeline")?;
+#[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
+#[as_ref(forward)]
+pub struct SecondLevelDomain(String);
 
-        opentelemetry::global::set_meter_provider(meter_provider.provider());
+#[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
+#[as_ref(forward)]
+pub struct TopLevelDomain(String);
 
-        let meter = opentelemetry::global::meter("bouncer");
-        let example_counter = meter
-            .i64_up_down_counter("example")
-            .with_description("This is an example counter")
-            .init();
+impl TopLevelDomain {
+    const LOCALHOST: &str = "localhost";
 
-        state.set_telemetry(tracer, Metrics {
-            example: example_counter,
-        })
-    } else if !state.config.is_test {
-        // Only log to console if telemetry disabled
-        tracing_subscriber::fmt()
-            .with_max_level(state.config.log_level())
-            .with_span_events(FmtSpan::CLOSE)
-            .init();
+    pub fn localhost() -> Self {
+        Self(Self::LOCALHOST.into())
     }
 
-    let port = state.config.port;
+    pub fn is_localhost(&self) -> bool {
+        self.0 == Self::LOCALHOST
+    }
+}
 
-    let state_arc = Arc::new(state);
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProjectData {
+    pub verified_domains: Vec<(SecondLevelDomain, TopLevelDomain)>,
+}
 
-    let global_middleware = ServiceBuilder::new();
+struct App<I> {
+    url_whitelist: Vec<UrlMatcher>,
+    infra: I,
+}
 
-    let app = Router::new()
-        .route("/health", get(handlers::health::handler))
-        .route(
-            "/attestation/:attestation_id",
-            get(handlers::attestation::get),
-        )
-        .route("/index.js", get(handlers::enclave::index_js_handler))
-        .route("/:project_id", get(handlers::enclave::project_handler))
-        .route("/attestation", post(handlers::attestation::post))
-        .layer(global_middleware)
-        .with_state(state_arc);
+pub fn new(infra: impl Infra, url_whitelist: Vec<UrlMatcher>) -> impl Bouncer {
+    App {
+        url_whitelist,
+        infra,
+    }
+}
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+#[async_trait]
+impl<I: Infra> Bouncer for App<I> {
+    async fn get_url_matchers(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<UrlMatcher>, GetUrlMatchersError> {
+        let data = self
+            .project_registry()
+            .project_data(project_id)
+            .await
+            .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
+            .ok_or(GetUrlMatchersError::UnknownProject)
+            .tap_err(|_| warn!("Unknown project id"))?;
 
-    select! {
-        _ = axum::Server::bind(&addr).serve(app.into_make_service()) => info!("Server terminating"),
-        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+        let matchers = data
+            .verified_domains
+            .into_iter()
+            .map(|(sld, tld)| UrlMatcher {
+                protocol: Protocol::Https,
+                sld: Some(sld),
+                tld,
+            });
+
+        Ok(self.url_whitelist.iter().cloned().chain(matchers).collect())
     }
 
-    Ok(())
+    async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error> {
+        self.attestation_store()
+            .set_attestation(id, origin)
+            .await
+            .tap_err(|e| error!("AttestationStore::set_attestation: {e:?}"))
+    }
+
+    async fn get_attestation(&self, id: &str) -> Result<String, Error> {
+        self.attestation_store()
+            .get_attestation(id)
+            .await
+            .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))
+    }
 }
 
 /// Infrastucture dependencies of this service.
-pub trait Infra {
+pub trait Infra: Send + Sync + 'static {
     type AttestationStore: AttestationStore;
     type ProjectRegistry: ProjectRegistry;
 
@@ -173,5 +167,28 @@ where
 
     fn project_registry(&self) -> &Self::ProjectRegistry {
         &self.1
+    }
+}
+
+impl<I: Infra> App<I> {
+    pub fn attestation_store(&self) -> &I::AttestationStore {
+        self.infra.attestation_store()
+    }
+
+    pub fn project_registry(&self) -> &I::ProjectRegistry {
+        self.infra.project_registry()
+    }
+}
+
+#[derive(Default)]
+pub struct Counter(AtomicU64);
+
+impl Counter {
+    pub fn incr(&self) {
+        self.0.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub fn u64(&self) -> u64 {
+        self.0.load(Ordering::Relaxed)
     }
 }
