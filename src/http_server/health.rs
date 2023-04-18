@@ -1,7 +1,7 @@
 use {hyper::StatusCode, std::future};
 
 pub fn get(
-    resp: String,
+    provider: impl Fn() -> String + Clone + Send + 'static,
 ) -> impl Fn() -> future::Ready<(StatusCode, String)> + Clone + Send + 'static {
-    move || future::ready((StatusCode::OK, resp.clone()))
+    move || future::ready((StatusCode::OK, provider()))
 }

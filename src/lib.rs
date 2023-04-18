@@ -1,18 +1,20 @@
-pub mod attestation_store;
-pub mod http_server;
-pub mod project_registry;
-
 pub use {
-    anyhow::Error, async_trait::async_trait, attestation_store::AttestationStore,
+    anyhow::Error,
+    async_trait::async_trait,
+    attestation_store::AttestationStore,
     project_registry::ProjectRegistry,
 };
 use {
     derive_more::{AsRef, From},
     serde::{Deserialize, Serialize},
-    std::sync::atomic::{AtomicU64, Ordering},
     tap::TapFallible,
-    tracing::{error, warn},
+    tracing::{error, instrument, warn},
 };
+
+pub mod attestation_store;
+pub mod http_server;
+pub mod project_registry;
+pub mod util;
 
 #[async_trait]
 pub trait Bouncer: Send + Sync + 'static {
@@ -23,7 +25,7 @@ pub trait Bouncer: Send + Sync + 'static {
     ) -> Result<Vec<UrlMatcher>, GetUrlMatchersError>;
 
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
-    async fn get_attestation(&self, id: &str) -> Result<String, Error>;
+    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error>;
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -105,6 +107,7 @@ pub fn new(infra: impl Infra, url_whitelist: Vec<UrlMatcher>) -> impl Bouncer {
 
 #[async_trait]
 impl<I: Infra> Bouncer for App<I> {
+    #[instrument(level = "warn", skip(self))]
     async fn get_url_matchers(
         &self,
         project_id: &str,
@@ -129,6 +132,7 @@ impl<I: Infra> Bouncer for App<I> {
         Ok(self.url_whitelist.iter().cloned().chain(matchers).collect())
     }
 
+    #[instrument(level = "debug", skip(self))]
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error> {
         self.attestation_store()
             .set_attestation(id, origin)
@@ -136,7 +140,8 @@ impl<I: Infra> Bouncer for App<I> {
             .tap_err(|e| error!("AttestationStore::set_attestation: {e:?}"))
     }
 
-    async fn get_attestation(&self, id: &str) -> Result<String, Error> {
+    #[instrument(level = "debug", skip(self))]
+    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error> {
         self.attestation_store()
             .get_attestation(id)
             .await
@@ -177,18 +182,5 @@ impl<I: Infra> App<I> {
 
     pub fn project_registry(&self) -> &I::ProjectRegistry {
         self.infra.project_registry()
-    }
-}
-
-#[derive(Default)]
-pub struct Counter(AtomicU64);
-
-impl Counter {
-    pub fn incr(&self) {
-        self.0.fetch_add(1, Ordering::Relaxed);
-    }
-
-    pub fn u64(&self) -> u64 {
-        self.0.load(Ordering::Relaxed)
     }
 }

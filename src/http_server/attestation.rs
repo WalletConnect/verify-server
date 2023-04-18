@@ -18,14 +18,15 @@ pub struct AttestationBody {
     pub origin: String,
 }
 
-#[instrument(skip(app))]
+#[instrument(level = "debug", skip(app))]
 pub async fn get(
     StateExtractor(app): StateExtractor<Arc<impl Bouncer>>,
     Path(attestation_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
     app.get_attestation(&attestation_id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)
         .map(|origin| AttestationBody {
             attestation_id,
             origin,
@@ -33,7 +34,7 @@ pub async fn get(
         .map(|body| ([(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")], Json(body)))
 }
 
-#[instrument(skip(app))]
+#[instrument(level = "debug", skip(app))]
 pub async fn post(
     StateExtractor(app): StateExtractor<Arc<impl Bouncer>>,
     body: Json<AttestationBody>,

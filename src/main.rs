@@ -1,18 +1,25 @@
 use {
     anyhow::Context as _,
+    axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder,
     bouncer::{
-        attestation_store,
-        project_registry::{self, cache::MeteredExt as _, CachedExt as _},
+        project_registry::{self, CachedExt as _},
+        util::redis,
     },
+    build_info::VersionControl,
+    futures::{future::select, FutureExt},
     serde::{Deserialize, Deserializer},
-    std::str::FromStr,
+    std::{future::Future, str::FromStr},
     tokio::signal::unix::{signal, SignalKind},
+    tracing::info,
 };
 
 #[derive(Deserialize, Debug, Clone, Eq, PartialEq)]
 pub struct Configuration {
     #[serde(default = "default_port")]
     pub port: u16,
+
+    #[serde(default = "default_prometheus_port")]
+    pub prometheus_port: u16,
 
     #[serde(default = "default_log_level")]
     #[serde(deserialize_with = "deserialize_log_level")]
@@ -42,6 +49,8 @@ build_info::build_info!(fn build_info);
 async fn main() -> Result<(), anyhow::Error> {
     let config = envy::from_env::<Configuration>()?;
 
+    let signals = shutdown_signals()?;
+
     let sub = tracing_subscriber::fmt().with_max_level(config.log_level);
     if config.log_pretty {
         sub.pretty().init();
@@ -51,30 +60,76 @@ async fn main() -> Result<(), anyhow::Error> {
             .init();
     }
 
-    let mut shutdown =
-        signal(SignalKind::terminate()).context("Failed to install SIGTERM handler")?;
+    let prometheus = PrometheusBuilder::new()
+        .install_recorder()
+        .context("Failed to install Prometheus metrics recorder")?;
 
-    let attestation_store = attestation_store::redis::new(config.attestation_cache_url.clone())
+    let attestation_store = redis::new("attestation_store", config.attestation_cache_url.clone())
         .context("Failed to initialize AttestationStore")?;
-    let cache = project_registry::cache::redis::new(config.project_registry_cache_url.clone())
-        .context("Failed to initialize project_registry::Cache")?
-        .metered();
+
+    let project_registry_cache = redis::new(
+        "project_registry_cache",
+        config.project_registry_cache_url.clone(),
+    )
+    .context("Failed to initialize project_registry::Cache")?;
 
     let project_registry = project_registry::cloud::new(
         config.project_registry_url.clone(),
         &config.project_registry_auth_token,
     )
     .context("Failed to initialize ProjectRegistry")?
-    .cached(cache);
+    .cached(project_registry_cache);
 
     let app = bouncer::new((attestation_store, project_registry), vec![]);
 
-    bouncer::http_server::run(app, config.port, "".to_string(), shutdown.recv()).await;
+    bouncer::http_server::run(
+        app,
+        config.port,
+        move || prometheus.render(),
+        config.prometheus_port,
+        health_provider,
+        signals,
+    )
+    .await;
+
     Ok(())
 }
 
+fn shutdown_signals() -> Result<impl Future, anyhow::Error> {
+    let mut term = signal(SignalKind::terminate()).context("Failed to install SIGTERM handler")?;
+    let mut int = signal(SignalKind::interrupt()).context("Failed to install SIGINT handler")?;
+
+    Ok(select(
+        Box::pin(async move { term.recv().map(|_| info!("SIGTERM received")).await }),
+        Box::pin(async move { int.recv().map(|_| info!("SIGINT received")).await }),
+    ))
+}
+
+fn health_provider() -> String {
+    let build_info = build_info();
+    let name = &build_info.crate_info.name;
+    let version = &build_info.crate_info.version;
+
+    let Some(git) = build_info.version_control.as_ref().and_then(VersionControl::git) else {
+        return format!("{} v{}", name, version);
+    };
+
+    format!(
+        "{} v{}, commit: {}, timestamp: {}, branch: {}",
+        name,
+        version,
+        git.commit_short_id,
+        git.commit_timestamp,
+        git.branch.as_deref().unwrap_or_default(),
+    )
+}
+
 fn default_port() -> u16 {
-    3008
+    3000
+}
+
+fn default_prometheus_port() -> u16 {
+    4000
 }
 
 fn default_log_level() -> tracing::Level {

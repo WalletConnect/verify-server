@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use {
     crate::{Bouncer, GetUrlMatchersError, Protocol, UrlMatcher},
     axum::{
@@ -8,63 +6,59 @@ use {
         routing::{get, post},
         Router,
     },
+    futures::FutureExt,
     hyper::{header, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
-    tokio::select,
-    tower::ServiceBuilder,
+    tap::{Pipe, Tap},
     tracing::{info, instrument},
 };
 
-use ::metrics::histogram;
-use axum::{extract::MatchedPath, response::Response};
-use hyper::{Body, Request};
-use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, TraceLayer};
-use tracing::{debug, error, info_span, warn, Span};
+#[rustfmt::skip]
+// We don't actually depend on prometheus here, we only use it for `axum ->
+// metrics` integration. See: https://github.com/Ptrskay3/axum-prometheus/issues/16
+use axum_prometheus::PrometheusMetricLayer as MetricLayer;
 
 mod attestation;
 mod health;
 mod index_js;
 mod metrics;
 
-pub async fn run(app: impl Bouncer, port: u16, health_resp: String, shutdown: impl Future) {
-    let trace_layer = TraceLayer::new_for_http()
-        .make_span_with(|req: &Request<Body>| {
-            info_span!(
-                "request",
-                method = %req.method(),
-                path = %req.extensions().get::<MatchedPath>().map(|p| p.as_str()).unwrap_or_default(),
-            )
-        })
-        .on_request(DefaultOnRequest::new())
-        .on_response(|resp: &Response, latency: Duration, span: &Span| {
-            let method = span.field("method").map(|v| v.to_string()).unwrap_or_default();
+pub async fn run(
+    app: impl Bouncer,
+    port: u16,
+    metrics_provider: impl Fn() -> String + Clone + Send + 'static,
+    metrics_port: u16,
+    health_provider: impl Fn() -> String + Clone + Send + 'static,
+    shutdown: impl Future,
+) {
+    let shutdown = shutdown
+        .map(|_| info!("Shutting down servers gracefully"))
+        .shared();
 
-            histogram!("latency", latency, "method" => method);
-            let _span = span.enter();
-            match resp.status().as_u16() {
-                s @ 200..=299 => debug!("{s}"),
-                s @ 400..=499 => warn!("{s}"),
-                s @ 500..=599 => error!("{s}"),
-                _ => {}
-            };
-        });
-
-    let app = Router::new()
-        .route("/health", get(health::get(health_resp)))
+    let server = Router::new()
+        .route("/health", get(health::get(health_provider)))
         .route("/attestation/:attestation_id", get(attestation::get))
         .route("/attestation", post(attestation::post))
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
-        .layer(trace_layer)
-        .with_state(Arc::new(app));
+        .layer(MetricLayer::new())
+        .with_state(Arc::new(app))
+        .into_make_service()
+        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
+        .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))
+        .tap(|_| info!("Serving at :{port}"));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let metrics_server = Router::new()
+        .route("/metrics", get(metrics::get(metrics_provider)))
+        .into_make_service()
+        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], metrics_port))).serve(svc))
+        .pipe(|s| s.with_graceful_shutdown(shutdown))
+        .tap(|_| info!("Serving metrics at :{metrics_port}"));
 
-    info!("Listening at :{port}");
-    select! {
-        _ = axum::Server::bind(&addr).serve(app.into_make_service()) => info!("Server terminating"),
-        _ = shutdown => info!("Shutdown signal received, killing the server"),
-    }
+    let _ = futures::join!(
+        server.map(|_| info!("Server terminated")),
+        metrics_server.map(|_| info!("Metrics server terminated"))
+    );
 }
 
 const INDEX_HTML: &str = r#"
@@ -76,7 +70,7 @@ const INDEX_HTML: &str = r#"
 </html>
 "#;
 
-#[instrument(skip(app))]
+#[instrument(level = "debug", skip(app))]
 pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<String>,
@@ -89,6 +83,15 @@ pub async fn root(
     let headers = [(header::CONTENT_SECURITY_POLICY, content_security)];
 
     Ok((headers, Html(INDEX_HTML)))
+}
+
+impl From<GetUrlMatchersError> for StatusCode {
+    fn from(e: GetUrlMatchersError) -> Self {
+        match e {
+            GetUrlMatchersError::UnknownProject => StatusCode::NOT_FOUND,
+            GetUrlMatchersError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
 }
 
 fn build_content_security_header(matchers: Vec<UrlMatcher>) -> String {
@@ -105,20 +108,12 @@ fn build_content_security_header(matchers: Vec<UrlMatcher>) -> String {
             .unwrap_or_default();
 
         // `*.sld.tld` doesn't match `sld.tld` by the Content-Security-Policy spec, so
-        // we are specifying both `*.sld.tld` and `sld.tld`
+        // we are specifying both `*.sld.tld` and `sld.tld`.
+        // See the test for this function if you have any doubts.
         [" ", proto, "*.", sld, sep, tld, " ", proto, sld, sep, tld]
     });
 
     iter::once("frame-ancestors").chain(urls).collect()
-}
-
-impl From<GetUrlMatchersError> for StatusCode {
-    fn from(e: GetUrlMatchersError) -> Self {
-        match e {
-            GetUrlMatchersError::UnknownProject => StatusCode::NOT_FOUND,
-            GetUrlMatchersError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
 }
 
 #[test]

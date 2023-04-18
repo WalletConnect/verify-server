@@ -1,8 +1,9 @@
 pub mod cache;
 pub mod cloud;
 
-use crate::{async_trait, ProjectData};
 pub use cache::{Cache, Cached, CachedExt};
+
+use crate::{async_trait, ProjectData};
 
 #[async_trait]
 pub trait ProjectRegistry: Send + Sync + 'static {
