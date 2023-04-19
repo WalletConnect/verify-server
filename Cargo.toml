@@ -11,7 +11,7 @@ build = "build.rs"
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.6", features = ["json"] }
 tower = "0.4"
-tower-http = { version = "0.3", features = ["trace"] }
+tower-http = { version = "0.3", features = ["cors", "trace"] }
 hyper = "0.14"
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.3.0" }
 

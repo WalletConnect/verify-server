@@ -28,6 +28,7 @@ use {
     std::{net::SocketAddr, sync::Arc, time::Duration},
     tokio::{select, sync::broadcast},
     tower::ServiceBuilder,
+    tower_http::cors::{self, CorsLayer},
     tracing::info,
     tracing_subscriber::fmt::format::FmtSpan,
 };
@@ -136,6 +137,7 @@ pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configurati
         )
         .route("/:project_id", get(handlers::enclave::handler))
         .route("/attestation", post(handlers::attestation::post))
+        .layer(CorsLayer::new().allow_origin(cors::Any))
         .layer(global_middleware)
         .with_state(state_arc);
 
