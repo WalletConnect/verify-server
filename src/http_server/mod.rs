@@ -10,6 +10,7 @@ use {
     hyper::{header, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
+    tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
 };
 
@@ -43,6 +44,7 @@ pub async fn run(
         .route("/attestation", post(attestation::post))
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
+        .layer(CorsLayer::new().allow_origin(cors::Any))
         .layer(MetricLayer::new())
         .with_state(Arc::new(app))
         .into_make_service()

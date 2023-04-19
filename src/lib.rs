@@ -1,5 +1,7 @@
 pub use {
-    anyhow::Error, async_trait::async_trait, attestation_store::AttestationStore,
+    anyhow::Error,
+    async_trait::async_trait,
+    attestation_store::AttestationStore,
     project_registry::ProjectRegistry,
 };
 use {

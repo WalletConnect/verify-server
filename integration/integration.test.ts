@@ -42,7 +42,7 @@ describe('verify', () => {
       resp = await axios.get(`${url}/some`)
 
       expect(resp.status).toBe(200)
-      console.log('headers', Object.keys(resp.headers))
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
       expect(resp.data.origin).toBe('localhost')
     })
   })
@@ -63,6 +63,7 @@ describe('verify', () => {
         let vercel = "https://*.vercel.app https://vercel.app"
         let localhost = "http://*.localhost http://localhost"
         expect(policy).toBe(`frame-ancestors ${wc} ${wc} ${vercel} ${localhost}`)
+        expect(resp.headers["access-control-allow-origin"]).toBe("*")
       }
     })
 
@@ -77,6 +78,7 @@ describe('verify', () => {
     it('get index.js', async () => {
       let resp: any = await axios.get(`${url}/index.js`)
       expect(resp.status).toBe(200)
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
   })
 })

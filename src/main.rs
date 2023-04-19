@@ -1,11 +1,10 @@
-use bouncer::Domain;
-
 use {
     anyhow::Context as _,
     axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder,
     bouncer::{
         project_registry::{self, CachedExt as _},
         util::redis,
+        Domain,
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},

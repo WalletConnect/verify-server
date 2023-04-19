@@ -1,7 +1,6 @@
-use crate::Domain;
-
 use {
     super::{ProjectData, ProjectRegistry, Result},
+    crate::Domain,
     async_trait::async_trait,
     cerberus::registry::{RegistryClient, RegistryHttpClient},
     metrics::counter,
