@@ -8,7 +8,8 @@ variable "project_registry_auth_token" {
 }
 
 variable "domain_whitelist" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "region" {
