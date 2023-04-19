@@ -17,8 +17,6 @@ const BASE_URLS = new Map<string, string>([
 
 const ENV = process.env.JEST_ENV;
 
-const TEST_TENANT = process.env.TEST_TENANT_ID_APNS
-
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || '3cbaa32f8fbf3cdcc87d27ca1fa68069'
 
 const BASE_URL = BASE_URLS.get(process.env.JEST_ENV)
@@ -61,7 +59,10 @@ describe('verify', () => {
       if (ENV === 'prod') {
         expect(policy).toBe("frame-ancestors https://*.walletconnect.com")
       } else {
-        expect(policy).toBe("frame-ancestors https://*.walletconnect.com https://*.walletconnect.com https://*.vercel.app *.localhost")
+        let wc = "https://*.walletconnect.com https://walletconnect.com"
+        let vercel = "https://*.vercel.app https://vercel.app"
+        let localhost = "http://*.localhost http://localhost"
+        expect(policy).toBe(`frame-ancestors ${wc} ${wc} ${vercel} ${localhost}`)
       }
     })
 

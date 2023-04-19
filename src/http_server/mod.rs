@@ -1,5 +1,5 @@
 use {
-    crate::{Bouncer, GetUrlMatchersError, Protocol, UrlMatcher},
+    crate::{Bouncer, GetAllowedDomainsError},
     axum::{
         extract::{Path, State},
         response::{Html, IntoResponse},
@@ -17,6 +17,8 @@ use {
 // We don't actually depend on prometheus here, we only use it for `axum ->
 // metrics` integration. See: https://github.com/Ptrskay3/axum-prometheus/issues/16
 use axum_prometheus::PrometheusMetricLayer as MetricLayer;
+
+use crate::Domain;
 
 mod attestation;
 mod health;
@@ -76,7 +78,7 @@ pub async fn root(
     Path(project_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let content_security = app
-        .get_url_matchers(&project_id)
+        .get_allowed_domains(&project_id)
         .await
         .map(build_content_security_header)?;
 
@@ -85,32 +87,27 @@ pub async fn root(
     Ok((headers, Html(INDEX_HTML)))
 }
 
-impl From<GetUrlMatchersError> for StatusCode {
-    fn from(e: GetUrlMatchersError) -> Self {
+impl From<GetAllowedDomainsError> for StatusCode {
+    fn from(e: GetAllowedDomainsError) -> Self {
         match e {
-            GetUrlMatchersError::UnknownProject => StatusCode::NOT_FOUND,
-            GetUrlMatchersError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GetAllowedDomainsError::UnknownProject => StatusCode::NOT_FOUND,
+            GetAllowedDomainsError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
 
-fn build_content_security_header(matchers: Vec<UrlMatcher>) -> String {
-    let urls = matchers.iter().flat_map(|m| {
-        let proto = match m.protocol {
-            Protocol::Http => "http://",
-            Protocol::Https => "https://",
+fn build_content_security_header(domains: Vec<Domain>) -> String {
+    let urls = domains.iter().map(AsRef::as_ref).flat_map(|domain| {
+        let proto = if domain == "localhost" {
+            "http://"
+        } else {
+            "https://"
         };
-        let tld = m.tld.as_ref();
-        let (sld, sep) = m
-            .sld
-            .as_ref()
-            .map(|sld| (sld.as_ref(), "."))
-            .unwrap_or_default();
 
-        // `*.sld.tld` doesn't match `sld.tld` by the Content-Security-Policy spec, so
-        // we are specifying both `*.sld.tld` and `sld.tld`.
+        // `*.domain` doesn't match `domain` by the Content-Security-Policy spec, so
+        // we are specifying both.
         // See the test for this function if you have any doubts.
-        [" ", proto, "*.", sld, sep, tld, " ", proto, sld, sep, tld]
+        [" ", proto, "*.", domain, " ", proto, domain]
     });
 
     iter::once("frame-ancestors").chain(urls).collect()
@@ -118,32 +115,19 @@ fn build_content_security_header(matchers: Vec<UrlMatcher>) -> String {
 
 #[test]
 fn test_build_content_security_header() {
-    fn case(matchers: &[(&str, Option<&str>, &str)], expected: &str) {
-        let matchers = matchers.into_iter().map(|(proto, sld, tld)| UrlMatcher {
-            protocol: match *proto {
-                "http" => Protocol::Http,
-                "https" => Protocol::Https,
-                _ => unreachable!(),
-            },
-            sld: sld.map(|s| s.to_string().into()),
-            tld: tld.to_string().into(),
-        });
-
-        let got = build_content_security_header(matchers.collect());
+    fn case(domains: &[&str], expected: &str) {
+        let domains = domains.into_iter().map(|s| Domain::from(s.to_string()));
+        let got = build_content_security_header(domains.collect());
         assert_eq!(&got, expected);
     }
 
     case(
-        &[("https", Some("walletconnect"), "com")],
+        &["walletconnect.com"],
         "frame-ancestors https://*.walletconnect.com https://walletconnect.com",
     );
 
     case(
-        &[
-            ("https", Some("walletconnect"), "com"),
-            ("https", Some("vercel"), "app"),
-            ("http", None, "localhost"),
-        ],
+        &["walletconnect.com", "vercel.app", "localhost"],
         "frame-ancestors https://*.walletconnect.com https://walletconnect.com \
                          https://*.vercel.app https://vercel.app \
                          http://*.localhost http://localhost",

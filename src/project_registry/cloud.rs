@@ -1,7 +1,7 @@
+use crate::Domain;
+
 use {
     super::{ProjectData, ProjectRegistry, Result},
-    crate::{SecondLevelDomain, TopLevelDomain},
-    anyhow::anyhow,
     async_trait::async_trait,
     cerberus::registry::{RegistryClient, RegistryHttpClient},
     metrics::counter,
@@ -27,23 +27,7 @@ impl ProjectRegistry for RegistryHttpClient {
             return Ok(None);
         };
 
-        let verified_domains = data
-            .verified_domains
-            .into_iter()
-            .map(|d| try_parse_domain(&d).ok_or_else(|| anyhow!("Invalid domain: {d}")))
-            .collect::<Result<_>>()?;
-
+        let verified_domains = data.verified_domains.into_iter().map(Domain).collect();
         Ok(Some(ProjectData { verified_domains }))
-    }
-}
-
-fn try_parse_domain(s: &str) -> Option<(SecondLevelDomain, TopLevelDomain)> {
-    let mut parts = s.split('.');
-    let sld = parts.next()?;
-    let tld = parts.next()?;
-
-    match parts.next() {
-        Some(_) => None,
-        None => Some((sld.to_string().into(), tld.to_string().into())),
     }
 }

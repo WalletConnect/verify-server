@@ -1,7 +1,5 @@
 pub use {
-    anyhow::Error,
-    async_trait::async_trait,
-    attestation_store::AttestationStore,
+    anyhow::Error, async_trait::async_trait, attestation_store::AttestationStore,
     project_registry::ProjectRegistry,
 };
 use {
@@ -19,17 +17,17 @@ pub mod util;
 #[async_trait]
 pub trait Bouncer: Send + Sync + 'static {
     /// Returns a list of [`UrlMatcher`]s for the project.
-    async fn get_url_matchers(
+    async fn get_allowed_domains(
         &self,
         project_id: &str,
-    ) -> Result<Vec<UrlMatcher>, GetUrlMatchersError>;
+    ) -> Result<Vec<Domain>, GetAllowedDomainsError>;
 
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
     async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error>;
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum GetUrlMatchersError {
+pub enum GetAllowedDomainsError {
     #[error("UnknownProject")]
     UnknownProject,
 
@@ -37,70 +35,22 @@ pub enum GetUrlMatchersError {
     Other(#[from] Error),
 }
 
-/// Matcher describing on which URLs a project is allowed to be served.
-#[derive(Clone, Debug)]
-pub struct UrlMatcher {
-    /// Matching URL should have this exact [`Protocol`].
-    pub protocol: Protocol,
-
-    /// When `Some` the matching URL should have this exact
-    /// [`SecondLevelDomain`]. When `None` the matching URL may have any
-    /// [`SecondLevelDomain`] or none.
-    pub sld: Option<SecondLevelDomain>,
-
-    /// Matching URL should have this exact [`TopLevelDomain`].
-    pub tld: TopLevelDomain,
-}
-
-impl UrlMatcher {
-    pub fn localhost(protocol: Protocol) -> Self {
-        Self {
-            protocol,
-            sld: None,
-            tld: TopLevelDomain::localhost(),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum Protocol {
-    Http,
-    Https,
-}
-
 #[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
-#[as_ref(forward)]
-pub struct SecondLevelDomain(String);
-
-#[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
-#[as_ref(forward)]
-pub struct TopLevelDomain(String);
-
-impl TopLevelDomain {
-    const LOCALHOST: &str = "localhost";
-
-    pub fn localhost() -> Self {
-        Self(Self::LOCALHOST.into())
-    }
-
-    pub fn is_localhost(&self) -> bool {
-        self.0 == Self::LOCALHOST
-    }
-}
+pub struct Domain(String);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProjectData {
-    pub verified_domains: Vec<(SecondLevelDomain, TopLevelDomain)>,
+    pub verified_domains: Vec<Domain>,
 }
 
 struct App<I> {
-    url_whitelist: Vec<UrlMatcher>,
+    domain_whitelist: Vec<Domain>,
     infra: I,
 }
 
-pub fn new(infra: impl Infra, url_whitelist: Vec<UrlMatcher>) -> impl Bouncer {
+pub fn new(domain_whitelist: Vec<Domain>, infra: impl Infra) -> impl Bouncer {
     App {
-        url_whitelist,
+        domain_whitelist,
         infra,
     }
 }
@@ -108,28 +58,22 @@ pub fn new(infra: impl Infra, url_whitelist: Vec<UrlMatcher>) -> impl Bouncer {
 #[async_trait]
 impl<I: Infra> Bouncer for App<I> {
     #[instrument(level = "warn", skip(self))]
-    async fn get_url_matchers(
+    async fn get_allowed_domains(
         &self,
         project_id: &str,
-    ) -> Result<Vec<UrlMatcher>, GetUrlMatchersError> {
-        let data = self
+    ) -> Result<Vec<Domain>, GetAllowedDomainsError> {
+        let mut domains = self
             .project_registry()
             .project_data(project_id)
             .await
             .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
-            .ok_or(GetUrlMatchersError::UnknownProject)
-            .tap_err(|_| warn!("Unknown project id"))?;
+            .ok_or(GetAllowedDomainsError::UnknownProject)
+            .tap_err(|_| warn!("Unknown project id"))?
+            .verified_domains;
 
-        let matchers = data
-            .verified_domains
-            .into_iter()
-            .map(|(sld, tld)| UrlMatcher {
-                protocol: Protocol::Https,
-                sld: Some(sld),
-                tld,
-            });
+        domains.extend_from_slice(&self.domain_whitelist);
 
-        Ok(self.url_whitelist.iter().cloned().chain(matchers).collect())
+        Ok(domains)
     }
 
     #[instrument(level = "debug", skip(self))]

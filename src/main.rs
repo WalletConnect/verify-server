@@ -1,3 +1,5 @@
+use bouncer::Domain;
+
 use {
     anyhow::Context as _,
     axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder,
@@ -13,7 +15,7 @@ use {
     tracing::info,
 };
 
-#[derive(Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Configuration {
     #[serde(default = "default_port")]
     pub port: u16,
@@ -34,20 +36,18 @@ pub struct Configuration {
     pub project_registry_auth_token: String,
     pub project_registry_cache_url: String,
 
-    /// Indicates whether the service is being run in a dev environment.
+    /// Additional domains to allow the Enclave to be served on.
     ///
-    /// Setting this to `true` allows the Enclave to be served to
-    /// `*.walletconnect.com`, `*.vercel.app` and `*.localhost` regardless
-    /// of the verified domains of the project.
+    /// Intended for testing purposes on dev environments.
     #[serde(default)]
-    pub is_dev: bool,
+    pub domain_whitelist: Vec<Domain>,
 }
 
 build_info::build_info!(fn build_info);
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let config = envy::from_env::<Configuration>()?;
+    let config = envy::from_env::<Configuration>().context("Failed to build config")?;
 
     let signals = shutdown_signals()?;
 
@@ -80,7 +80,10 @@ async fn main() -> Result<(), anyhow::Error> {
     .context("Failed to initialize ProjectRegistry")?
     .cached(project_registry_cache);
 
-    let app = bouncer::new((attestation_store, project_registry), vec![]);
+    let app = bouncer::new(
+        config.domain_whitelist,
+        (attestation_store, project_registry),
+    );
 
     bouncer::http_server::run(
         app,
