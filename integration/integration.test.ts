@@ -42,7 +42,7 @@ describe('verify', () => {
       resp = await axios.get(`${url}/some`)
 
       expect(resp.status).toBe(200)
-      console.log('headers', Object.keys(resp.headers))
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
       expect(resp.data.origin).toBe('localhost')
     })
   })
@@ -57,6 +57,7 @@ describe('verify', () => {
       let policy = resp.headers["content-security-policy"]
       expect(policy).toMatch(new RegExp("^frame-ancestors"))
       expect(policy).toContain("https://react-app.walletconnect.com")
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
 
     it('non-existent project', async () => {
@@ -75,6 +76,7 @@ describe('verify', () => {
       let policy = resp.headers["content-security-policy"]
       expect(policy).toMatch(new RegExp("^frame-ancestors"))
       expect(policy).toContain("https://react-app.walletconnect.com")
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
   })
 })
