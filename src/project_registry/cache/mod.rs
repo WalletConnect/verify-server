@@ -81,7 +81,8 @@ where
                 .set_data(&id, &data_clone)
                 .await
                 .tap_err(|e| error!("set: {e:?}"))
-                .tap_err(|_| counter!("project_registry_cache_write_errors", 1));
+                .tap_err(|_| counter!("project_registry_cache_write_errors", 1))
+                .tap_ok(|_| counter!("project_registry_cache_writes", 1));
         });
 
         Ok(data)
