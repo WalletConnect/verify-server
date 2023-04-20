@@ -1,11 +1,12 @@
 use {
-    crate::{Bouncer, GetAllowedDomainsError},
+    crate::{Bouncer, Domain, GetAllowedDomainsError},
     axum::{
         extract::{Path, State},
         response::{Html, IntoResponse},
         routing::{get, post},
         Router,
     },
+    axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
     futures::FutureExt,
     hyper::{header, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
@@ -13,13 +14,6 @@ use {
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
 };
-
-#[rustfmt::skip]
-// We don't actually depend on prometheus here, we only use it for `axum ->
-// metrics` integration. See: https://github.com/Ptrskay3/axum-prometheus/issues/16
-use axum_prometheus::PrometheusMetricLayer as MetricLayer;
-
-use crate::Domain;
 
 mod attestation;
 mod health;
@@ -38,6 +32,12 @@ pub async fn run(
         .map(|_| info!("Shutting down servers gracefully"))
         .shared();
 
+    let metrics_layer = MetricLayerBuilder::new()
+        // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
+        // of junk like "/+CSCOE+/logon.html".
+        .with_endpoint_label_type(EndpointLabel::MatchedPathWithFallbackFn(|_| String::new()))
+        .build();
+
     let server = Router::new()
         .route("/health", get(health::get(health_provider)))
         .route("/attestation/:attestation_id", get(attestation::get))
@@ -45,7 +45,7 @@ pub async fn run(
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
         .layer(CorsLayer::new().allow_origin(cors::Any))
-        .layer(MetricLayer::new())
+        .layer(metrics_layer)
         .with_state(Arc::new(app))
         .into_make_service()
         .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
