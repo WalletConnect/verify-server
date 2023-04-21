@@ -1,6 +1,9 @@
 use {
     anyhow::Context as _,
-    axum_prometheus::metrics_exporter_prometheus::PrometheusBuilder,
+    axum_prometheus::{
+        metrics_exporter_prometheus::{Matcher as MetricMatcher, PrometheusBuilder},
+        AXUM_HTTP_REQUESTS_DURATION_SECONDS,
+    },
     bouncer::{
         project_registry::{self, CachedExt as _},
         util::redis,
@@ -59,7 +62,15 @@ async fn main() -> Result<(), anyhow::Error> {
             .init();
     }
 
+    // By default `axum_prometheus` exposes http latency as a Summary, which
+    // provides quite limited querying functionaliy. `set_buckets_for_metrics`
+    // makes it a Histogram.
     let prometheus = PrometheusBuilder::new()
+        .set_buckets_for_metric(
+            MetricMatcher::Full(AXUM_HTTP_REQUESTS_DURATION_SECONDS.to_string()),
+            axum_prometheus::SECONDS_DURATION_BUCKETS,
+        )
+        .context("Failed to set Prometheus buckets for HTTP request latency metrics")?
         .install_recorder()
         .context("Failed to install Prometheus metrics recorder")?;
 
