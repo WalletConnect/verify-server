@@ -53,5 +53,5 @@ data "template_file" "grafana_dashboard_template" {
 resource "grafana_dashboard" "at_a_glance" {
   overwrite   = true
   message     = "Updated by Terraform"
-  config_json = jsonencode(data.template_file.grafana_dashboard_template.rendered)
+  config_json = data.template_file.grafana_dashboard_template.rendered
 }
