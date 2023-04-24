@@ -44,14 +44,14 @@ resource "grafana_data_source" "cloudwatch" {
 # JSON Dashboard. When exporting from Grafana make sure that all
 # variables are replaced properly using template syntax
 data "template_file" "grafana_dashboard_template" {
-  template = file("grafana-dashboard.json.tpl")
+  template = file("monitoring/grafana-dashboard.json.tpl")
   vars = {
     environment = var.environment
   }
 }
 
 resource "grafana_dashboard" "at_a_glance" {
-  overwrite = true
-  message   = "Updated by Terraform"
+  overwrite   = true
+  message     = "Updated by Terraform"
   config_json = jsonencode(data.template_file.grafana_dashboard_template.rendered)
 }
