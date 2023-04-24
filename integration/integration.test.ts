@@ -72,7 +72,17 @@ describe('verify', () => {
 
     it('project without a verified domain', async () => {
       let promise = axios.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
-      await expect(promise).rejects.toThrowError('404')    
+
+      if (ENV === 'prod') {
+        await expect(promise).rejects.toThrowError('404')    
+      } else {
+        let policy = (await promise).headers["content-security-policy"]
+
+        let wc = "https://*.walletconnect.com https://walletconnect.com"
+        let vercel = "https://*.vercel.app https://vercel.app"
+        let localhost = "http://*.localhost http://localhost"
+        expect(policy).toBe(`frame-ancestors ${wc} ${vercel} ${localhost}`)
+      }
     })
   })
   describe('index.js', () => {

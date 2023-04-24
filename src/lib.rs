@@ -18,7 +18,6 @@ pub mod util;
 
 #[async_trait]
 pub trait Bouncer: Send + Sync + 'static {
-    /// Returns a list of [`UrlMatcher`]s for the project.
     async fn get_allowed_domains(
         &self,
         project_id: &str,

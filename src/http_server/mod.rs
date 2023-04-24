@@ -77,12 +77,15 @@ pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let content_security = app
-        .get_allowed_domains(&project_id)
-        .await
-        .map(build_content_security_header)?;
+    let domains = app.get_allowed_domains(&project_id).await?;
+    if domains.is_empty() {
+        return Err(StatusCode::NOT_FOUND);
+    }
 
-    let headers = [(header::CONTENT_SECURITY_POLICY, content_security)];
+    let headers = [(
+        header::CONTENT_SECURITY_POLICY,
+        build_content_security_header(domains),
+    )];
 
     Ok((headers, Html(INDEX_HTML)))
 }
