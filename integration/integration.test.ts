@@ -69,6 +69,11 @@ describe('verify', () => {
       let promise = axios.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
       await expect(promise).rejects.toThrowError('404')    
     })
+
+    it('project without a verified domain', async () => {
+      let promise = axios.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
+      await expect(promise).rejects.toThrowError('404')    
+    })
   })
   describe('index.js', () => {
     const url = `${BASE_URL}`
