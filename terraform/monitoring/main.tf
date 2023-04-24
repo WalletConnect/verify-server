@@ -42,53 +42,16 @@ resource "grafana_data_source" "cloudwatch" {
 }
 
 # JSON Dashboard. When exporting from Grafana make sure that all
-# variables are replaced properly
+# variables are replaced properly using template syntax
+data "template_file" "grafana_dashboard_template" {
+  template = file("grafana-dashboard.json.tpl")
+  vars = {
+    environment = var.environment
+  }
+}
+
 resource "grafana_dashboard" "at_a_glance" {
   overwrite = true
   message   = "Updated by Terraform"
-  config_json = jsonencode({
-    annotations : {
-      list : [
-        {
-          builtIn : 1,
-          datasource : "-- Grafana --",
-          enable : true,
-          hide : true,
-          iconColor : "rgba(0, 211, 255, 1)",
-          name : "Annotations & Alerts",
-          target : {
-            limit : 100,
-            matchAny : false,
-            tags : [],
-            type : "dashboard"
-          },
-          type : "dashboard"
-        }
-      ]
-    },
-    editable : true,
-    fiscalYearStartMonth : 0,
-    graphTooltip : 0,
-    id : 19,
-    links : [],
-    liveNow : false,
-    panels : [],
-
-    schemaVersion : 36,
-    style : "dark",
-    tags : [],
-    templating : {
-      list : []
-    },
-    time : {
-      from : "now-6h",
-      to : "now"
-    },
-    timepicker : {},
-    timezone : "",
-    title : "${var.environment}_${var.app_name}",
-    uid : "${var.environment}_${var.app_name}",
-    version : 1,
-    weekStart : ""
-  })
+  config_json = jsonencode(data.template_file.grafana_dashboard_template.rendered)
 }
