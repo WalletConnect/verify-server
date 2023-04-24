@@ -15,6 +15,8 @@ const BASE_URLS = new Map<string, string>([
   ['local', 'http://localhost:3000'],
 ])
 
+const ENV = process.env.JEST_ENV;
+
 const TEST_TENANT = process.env.TEST_TENANT_ID_APNS
 
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || '3cbaa32f8fbf3cdcc87d27ca1fa68069'
@@ -55,8 +57,12 @@ describe('verify', () => {
       expect(resp.status).toBe(200)
 
       let policy = resp.headers["content-security-policy"]
-      expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-app.walletconnect.com")
+
+      if (ENV === 'prod') {
+        expect(policy).toBe("frame-ancestors https://*.walletconnect.com")
+      } else {
+        expect(policy).toBe("frame-ancestors https://*.walletconnect.com https://*.vercel.app *.localhost https://*.walletconnect.com")
+      }
     })
 
     it('non-existent project', async () => {
@@ -69,12 +75,7 @@ describe('verify', () => {
 
     it('get index.js', async () => {
       let resp: any = await axios.get(`${url}/index.js`)
-
       expect(resp.status).toBe(200)
-
-      let policy = resp.headers["content-security-policy"]
-      expect(policy).toMatch(new RegExp("^frame-ancestors"))
-      expect(policy).toContain("https://react-app.walletconnect.com")
     })
   })
 })

@@ -13,7 +13,7 @@ axum = { version = "0.6", features = ["json"] }
 tower = "0.4"
 tower-http = { version = "0.3", features = ["trace"] }
 hyper = "0.14"
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.3.0" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.4.0" }
 
 # Database
 deadpool-redis = "0.10"
@@ -41,6 +41,7 @@ thiserror = "1.0"
 async-trait = "0.1"
 tap = "1.0"
 reqwest = "0.11"
+itertools = "0.10"
 
 [dev-dependencies]
 test-context = "0.1"
