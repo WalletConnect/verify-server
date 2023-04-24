@@ -1599,7 +1599,7 @@
           "statistic": "Minimum"
         }
       ],
-      "title": "CPU utilization",
+      "title": "CPU Utilization",
       "type": "timeseries"
     },
     {
@@ -1781,7 +1781,7 @@
           "statistic": "Minimum"
         }
       ],
-      "title": "Memory utilization",
+      "title": "Memory Utilization",
       "type": "timeseries"
     },
     {
@@ -1980,7 +1980,7 @@
           "statistic": "Minimum"
         }
       ],
-      "title": "CPU utilization",
+      "title": "CPU Utilization",
       "type": "timeseries"
     },
     {
@@ -2166,7 +2166,7 @@
           "statistic": "Minimum"
         }
       ],
-      "title": "Memory utilization",
+      "title": "Memory Utilization",
       "type": "timeseries"
     }
   ],
