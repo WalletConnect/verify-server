@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.15.0 - 2023-04-24
+#### Features
+- Build Content-Security-Policy header based on ProjectData::verified_domains (#14) - (8e16abc) - xDarksome
+#### Miscellaneous Chores
+- Remove branch name from image tag in deploy.yml - (8031e5c) - xDarksome
+- - -
+
 ## v0.14.0 - 2023-04-11
 #### Features
 - Implement project data cache (#12) - (9917d98) - xDarksome

@@ -78,12 +78,38 @@ impl<I: Infra> Bouncer for App<I> {
         Ok(domains)
     }
 
+<<<<<<< HEAD
     #[instrument(level = "debug", skip(self))]
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error> {
         self.attestation_store()
             .set_attestation(id, origin)
             .await
             .tap_err(|e| error!("AttestationStore::set_attestation: {e:?}"))
+=======
+    let port = state.config.port;
+
+    let state_arc = Arc::new(state);
+
+    let global_middleware = ServiceBuilder::new();
+
+    let app = Router::new()
+        .route("/health", get(handlers::health::handler))
+        .route(
+            "/attestation/:attestation_id",
+            get(handlers::attestation::get),
+        )
+        .route("/index.js", get(handlers::enclave::index_js_handler))
+        .route("/:project_id", get(handlers::enclave::project_handler))
+        .route("/attestation", post(handlers::attestation::post))
+        .layer(global_middleware)
+        .with_state(state_arc);
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+
+    select! {
+        _ = axum::Server::bind(&addr).serve(app.into_make_service()) => info!("Server terminating"),
+        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+>>>>>>> main
     }
 
     #[instrument(level = "debug", skip(self))]
