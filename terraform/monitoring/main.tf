@@ -46,7 +46,9 @@ resource "grafana_data_source" "cloudwatch" {
 data "template_file" "grafana_dashboard_template" {
   template = file("monitoring/grafana-dashboard.json.tpl")
   vars = {
-    environment = var.environment
+    environment                = var.environment
+    prometheus_data_source_uid = grafana_data_source.prometheus.uid
+    cloudwatch_data_source_uid = grafana_data_source.cloudwatch.uid
   }
 }
 

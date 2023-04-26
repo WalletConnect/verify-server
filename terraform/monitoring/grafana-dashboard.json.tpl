@@ -41,7 +41,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
       },
       "fieldConfig": {
         "defaults": {
@@ -119,7 +119,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(increase(axum_http_requests_total { status =~ \"^2.*\"}[$__range]))",
@@ -132,7 +133,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(increase(axum_http_requests_total { status =~ \"^4.*\"}[$__range]))",
@@ -145,7 +147,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(increase(axum_http_requests_total { status =~ \"^5.*\"}[$__range]))",
@@ -158,7 +161,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(increase(axum_http_requests_total { status !~ \"^(2|4|5).*\"}[$__range]))",
@@ -175,7 +179,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "description": "",
       "fieldConfig": {
@@ -296,7 +301,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(axum_http_requests_total{status=~\"^5.*\"}[1m])) by (status, method, endpoint)",
@@ -310,7 +316,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(axum_http_requests_total{status=~\"^4.*\"}[1m])) by (status, method, endpoint)",
@@ -324,7 +331,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(axum_http_requests_total{status!~\"^(2|4|5).*\"}[1m])) by (status, method, endpoint)",
@@ -338,7 +346,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(axum_http_requests_total{status=~\"^2.*$\"}[1m])) by (status, method, endpoint)",
@@ -355,7 +364,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -404,7 +414,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "histogram_quantile(0.5, sum by (le) (rate(axum_http_requests_duration_seconds_bucket[$__range]))) * 1000",
@@ -417,7 +428,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "histogram_quantile(0.9, sum by (le) (rate(axum_http_requests_duration_seconds_bucket[$__range]))) * 1000",
@@ -430,7 +442,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "histogram_quantile(0.99, sum by (le) (rate(axum_http_requests_duration_seconds_bucket[$__range]))) * 1000",
@@ -443,7 +456,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "histogram_quantile(0.999, sum by (le) (rate(axum_http_requests_duration_seconds_bucket[$__range]))) * 1000",
@@ -460,7 +474,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "description": "",
       "fieldConfig": {
@@ -571,7 +586,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "max(increase(axum_http_requests_duration_seconds_sum{method !~ \"GET|HEAD\"}[1m]) * 1000 / increase(axum_http_requests_duration_seconds_count{method !~ \"GET|HEAD\"}[1m])) by (method, endpoint)",
@@ -585,7 +601,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "max(increase(axum_http_requests_duration_seconds_sum{method =~ \"GET|HEAD\"}[1m]) * 1000 / increase(axum_http_requests_duration_seconds_count{method =~ \"GET|HEAD\"}[1m])) by (status, method, endpoint)",
@@ -615,7 +632,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -720,7 +738,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(project_registry_errors[1m]))",
@@ -732,7 +751,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(project_registry_requests[1m]))",
@@ -747,7 +767,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -852,7 +873,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "rate(project_registry_cache_errors[1m]) or vector(0)",
@@ -865,7 +887,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(project_registry_cache_misses[1m]))",
@@ -877,7 +900,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(project_registry_cache_hits[1m]))",
@@ -892,7 +916,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -997,7 +1022,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "rate(project_registry_cache_write_errors[1m]) or vector(0)",
@@ -1010,7 +1036,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(project_registry_cache_writes[1m]))",
@@ -1038,7 +1065,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -1173,7 +1201,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_read_errors{}[1m])) or vector(0)",
@@ -1185,7 +1214,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_reads{}[1m]))",
@@ -1197,7 +1227,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_read_errors{}[1m]) or vector(0)) by (db)",
@@ -1209,7 +1240,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_reads{}[1m])) by (db)",
@@ -1224,7 +1256,8 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "dAm_6PT4z"
+        "uid": "${prometheus_data_source_uid}"
+
       },
       "fieldConfig": {
         "defaults": {
@@ -1359,7 +1392,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_write_errors{}[1m])) or vector(0)",
@@ -1371,7 +1405,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_writes{}[1m]))",
@@ -1383,7 +1418,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_write_errors{}[1m]) or vector(0)) by (db)",
@@ -1395,7 +1431,8 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "dAm_6PT4z"
+            "uid": "${prometheus_data_source_uid}"
+
           },
           "exemplar": true,
           "expr": "sum(rate(redis_writes{}[1m])) by (db)",
@@ -1422,8 +1459,9 @@
     },
     {
       "datasource": {
+
         "type": "cloudwatch",
-        "uid": "joml6Eo4k"
+        "uid": "${cloudwatch_data_source_uid}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1531,7 +1569,7 @@
           "alias": "max",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1554,7 +1592,7 @@
           "alias": "avg",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1578,7 +1616,7 @@
           "alias": "min",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1605,7 +1643,7 @@
     {
       "datasource": {
         "type": "cloudwatch",
-        "uid": "joml6Eo4k"
+        "uid": "${cloudwatch_data_source_uid}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1713,7 +1751,7 @@
           "alias": "max",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1736,7 +1774,7 @@
           "alias": "avg",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1760,7 +1798,7 @@
           "alias": "min",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "ClusterName": "${environment}-verify"
@@ -1800,7 +1838,7 @@
     {
       "datasource": {
         "type": "cloudwatch",
-        "uid": "joml6Eo4k"
+        "uid": "${cloudwatch_data_source_uid}"
       },
       "fieldConfig": {
         "defaults": {
@@ -1908,7 +1946,7 @@
           "alias": "max",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
@@ -1933,7 +1971,7 @@
           "alias": "avg",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
@@ -1958,7 +1996,7 @@
           "alias": "min",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
@@ -1986,7 +2024,7 @@
     {
       "datasource": {
         "type": "cloudwatch",
-        "uid": "joml6Eo4k"
+        "uid": "${cloudwatch_data_source_uid}"
       },
       "fieldConfig": {
         "defaults": {
@@ -2094,7 +2132,7 @@
           "alias": "max",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
@@ -2119,7 +2157,7 @@
           "alias": "avg",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
@@ -2144,7 +2182,7 @@
           "alias": "min",
           "datasource": {
             "type": "cloudwatch",
-            "uid": "joml6Eo4k"
+            "uid": "${cloudwatch_data_source_uid}"
           },
           "dimensions": {
             "CacheClusterId": "verify-${environment}-verify",
