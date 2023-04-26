@@ -1,157 +1,101 @@
-pub mod attestation_store;
-pub mod config;
-pub mod project_registry;
-
-mod handlers;
-mod state;
-
-use {
-    crate::{
-        config::Configuration,
-        state::{AppState, Metrics},
-    },
-    anyhow::Context as _,
-    axum::{
-        routing::{get, post},
-        Router,
-    },
-    opentelemetry::{
-        sdk::{
-            metrics::selectors,
-            trace::{self, IdGenerator, Sampler},
-            Resource,
-        },
-        util::tokio_interval_stream,
-        KeyValue,
-    },
-    opentelemetry_otlp::{Protocol, WithExportConfig},
-    std::{net::SocketAddr, sync::Arc, time::Duration},
-    tokio::{select, sync::broadcast},
-    tower::ServiceBuilder,
-    tracing::info,
-    tracing_subscriber::fmt::format::FmtSpan,
+pub use {
+    anyhow::Error,
+    async_trait::async_trait,
+    attestation_store::AttestationStore,
+    project_registry::ProjectRegistry,
 };
-pub use {attestation_store::AttestationStore, project_registry::ProjectRegistry};
+use {
+    derive_more::{AsRef, From},
+    serde::{Deserialize, Serialize},
+    tap::TapFallible,
+    tracing::{error, instrument, warn},
+};
 
-build_info::build_info!(fn build_info);
+pub mod attestation_store;
+pub mod http_server;
+pub mod project_registry;
+pub mod util;
 
-pub type Result<T> = std::result::Result<T, Error>;
-pub type Error = anyhow::Error;
+#[async_trait]
+pub trait Bouncer: Send + Sync + 'static {
+    async fn get_allowed_domains(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<Domain>, GetAllowedDomainsError>;
 
-pub async fn bootstap(mut shutdown: broadcast::Receiver<()>, config: Configuration) -> Result<()> {
-    let attestation_store = attestation_store::redis::new(config.attestation_cache_url.clone())
-        .context("Failed to initialize AttestationStore")?;
-    let cache = project_registry::cache::redis::new(config.project_registry_cache_url.clone())
-        .context("Failed to initialize project_registry::Cache")?;
+    async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
+    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error>;
+}
 
-    let project_registry = project_registry::cloud::new(
-        config.project_registry_url.clone(),
-        &config.project_registry_auth_token,
-    )
-    .context("Failed to initialize ProjectRegistry")?;
-    let project_registry = project_registry::with_caching(project_registry, cache);
+#[derive(Debug, thiserror::Error)]
+pub enum GetAllowedDomainsError {
+    #[error("UnknownProject")]
+    UnknownProject,
 
-    let mut state = AppState::new(config, (attestation_store, project_registry));
+    #[error(transparent)]
+    Other(#[from] Error),
+}
 
-    // Telemetry
-    if state.config.telemetry_enabled.unwrap_or(false) {
-        let grpc_url = state
-            .config
-            .telemetry_grpc_url
-            .clone()
-            .unwrap_or_else(|| "http://localhost:4317".to_string());
+#[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
+pub struct Domain(String);
 
-        let tracing_exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint(grpc_url.clone())
-            .with_timeout(Duration::from_secs(5))
-            .with_protocol(Protocol::Grpc);
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProjectData {
+    pub verified_domains: Vec<Domain>,
+}
 
-        let tracer = opentelemetry_otlp::new_pipeline()
-            .tracing()
-            .with_exporter(tracing_exporter)
-            .with_trace_config(
-                trace::config()
-                    .with_sampler(Sampler::AlwaysOn)
-                    .with_id_generator(IdGenerator::default())
-                    .with_max_events_per_span(64)
-                    .with_max_attributes_per_span(16)
-                    .with_max_events_per_span(16)
-                    .with_resource(Resource::new(vec![
-                        KeyValue::new("service.name", state.build_info.crate_info.name.clone()),
-                        KeyValue::new(
-                            "service.version",
-                            state.build_info.crate_info.version.clone().to_string(),
-                        ),
-                    ])),
-            )
-            .install_batch(opentelemetry::runtime::Tokio)
-            .context("Failed to install opentelemetry tracer")?;
+struct App<I> {
+    domain_whitelist: Vec<Domain>,
+    infra: I,
+}
 
-        let metrics_exporter = opentelemetry_otlp::new_exporter()
-            .tonic()
-            .with_endpoint(grpc_url)
-            .with_timeout(Duration::from_secs(5))
-            .with_protocol(Protocol::Grpc);
+pub fn new(domain_whitelist: Vec<Domain>, infra: impl Infra) -> impl Bouncer {
+    App {
+        domain_whitelist,
+        infra,
+    }
+}
 
-        let meter_provider = opentelemetry_otlp::new_pipeline()
-            .metrics(tokio::spawn, tokio_interval_stream)
-            .with_exporter(metrics_exporter)
-            .with_period(Duration::from_secs(3))
-            .with_timeout(Duration::from_secs(10))
-            .with_aggregator_selector(selectors::simple::Selector::Exact)
-            .build()
-            .context("Failed to build opentelemetry otlp pipeline")?;
+#[async_trait]
+impl<I: Infra> Bouncer for App<I> {
+    #[instrument(level = "warn", skip(self))]
+    async fn get_allowed_domains(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<Domain>, GetAllowedDomainsError> {
+        let mut domains = self
+            .project_registry()
+            .project_data(project_id)
+            .await
+            .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
+            .ok_or(GetAllowedDomainsError::UnknownProject)
+            .tap_err(|_| warn!("Unknown project id"))?
+            .verified_domains;
 
-        opentelemetry::global::set_meter_provider(meter_provider.provider());
+        domains.extend_from_slice(&self.domain_whitelist);
 
-        let meter = opentelemetry::global::meter("bouncer");
-        let example_counter = meter
-            .i64_up_down_counter("example")
-            .with_description("This is an example counter")
-            .init();
-
-        state.set_telemetry(tracer, Metrics {
-            example: example_counter,
-        })
-    } else if !state.config.is_test {
-        // Only log to console if telemetry disabled
-        tracing_subscriber::fmt()
-            .with_max_level(state.config.log_level())
-            .with_span_events(FmtSpan::CLOSE)
-            .init();
+        Ok(domains)
     }
 
-    let port = state.config.port;
-
-    let state_arc = Arc::new(state);
-
-    let global_middleware = ServiceBuilder::new();
-
-    let app = Router::new()
-        .route("/health", get(handlers::health::handler))
-        .route(
-            "/attestation/:attestation_id",
-            get(handlers::attestation::get),
-        )
-        .route("/index.js", get(handlers::enclave::index_js_handler))
-        .route("/:project_id", get(handlers::enclave::project_handler))
-        .route("/attestation", post(handlers::attestation::post))
-        .layer(global_middleware)
-        .with_state(state_arc);
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-
-    select! {
-        _ = axum::Server::bind(&addr).serve(app.into_make_service()) => info!("Server terminating"),
-        _ = shutdown.recv() => info!("Shutdown signal received, killing servers"),
+    #[instrument(level = "debug", skip(self))]
+    async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error> {
+        self.attestation_store()
+            .set_attestation(id, origin)
+            .await
+            .tap_err(|e| error!("AttestationStore::set_attestation: {e:?}"))
     }
 
-    Ok(())
+    #[instrument(level = "debug", skip(self))]
+    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error> {
+        self.attestation_store()
+            .get_attestation(id)
+            .await
+            .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))
+    }
 }
 
 /// Infrastucture dependencies of this service.
-pub trait Infra {
+pub trait Infra: Send + Sync + 'static {
     type AttestationStore: AttestationStore;
     type ProjectRegistry: ProjectRegistry;
 
@@ -173,5 +117,15 @@ where
 
     fn project_registry(&self) -> &Self::ProjectRegistry {
         &self.1
+    }
+}
+
+impl<I: Infra> App<I> {
+    pub fn attestation_store(&self) -> &I::AttestationStore {
+        self.infra.attestation_store()
+    }
+
+    pub fn project_registry(&self) -> &I::ProjectRegistry {
+        self.infra.project_registry()
     }
 }

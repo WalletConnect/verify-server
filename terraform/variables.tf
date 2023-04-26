@@ -7,6 +7,11 @@ variable "project_registry_auth_token" {
   sensitive = true
 }
 
+variable "domain_whitelist" {
+  type    = string
+  default = ""
+}
+
 variable "region" {
   type    = string
   default = "eu-central-1"

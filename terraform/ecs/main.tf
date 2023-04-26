@@ -68,7 +68,7 @@ resource "aws_ecs_task_definition" "app_task_definition" {
         { name = "PROJECT_REGISTRY_CACHE_URL", value = "redis://${var.redis_url}/1" },
         { name = "PROJECT_REGISTRY_URL", value = var.project_registry_url },
         { name = "PROJECT_REGISTRY_AUTH_TOKEN", value = var.project_registry_auth_token },
-        { name = "IS_DEV", value = var.environment == "prod" ? "false" : "true" }
+        { name = "DOMAIN_WHITELIST", value = var.domain_whitelist }
       ],
       dependsOn = [
         { containerName = "aws-otel-collector", condition = "START" }

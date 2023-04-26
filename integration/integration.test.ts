@@ -17,8 +17,6 @@ const BASE_URLS = new Map<string, string>([
 
 const ENV = process.env.JEST_ENV;
 
-const TEST_TENANT = process.env.TEST_TENANT_ID_APNS
-
 const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || '3cbaa32f8fbf3cdcc87d27ca1fa68069'
 
 const BASE_URL = BASE_URLS.get(process.env.JEST_ENV)
@@ -44,7 +42,6 @@ describe('verify', () => {
       resp = await axios.get(`${url}/some`)
 
       expect(resp.status).toBe(200)
-      console.log('headers', Object.keys(resp.headers))
       expect(resp.data.origin).toBe('localhost')
     })
   })
@@ -61,13 +58,31 @@ describe('verify', () => {
       if (ENV === 'prod') {
         expect(policy).toBe("frame-ancestors https://*.walletconnect.com")
       } else {
-        expect(policy).toBe("frame-ancestors https://*.walletconnect.com https://*.vercel.app *.localhost https://*.walletconnect.com")
+        let wc = "https://*.walletconnect.com https://walletconnect.com"
+        let vercel = "https://*.vercel.app https://vercel.app"
+        let localhost = "http://*.localhost http://localhost"
+        expect(policy).toBe(`frame-ancestors ${wc} ${wc} ${vercel} ${localhost}`)
       }
     })
 
     it('non-existent project', async () => {
       let promise = axios.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
       await expect(promise).rejects.toThrowError('404')    
+    })
+
+    it('project without a verified domain', async () => {
+      let promise = axios.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
+
+      if (ENV === 'prod') {
+        await expect(promise).rejects.toThrowError('404')    
+      } else {
+        let policy = (await promise).headers["content-security-policy"]
+
+        let wc = "https://*.walletconnect.com https://walletconnect.com"
+        let vercel = "https://*.vercel.app https://vercel.app"
+        let localhost = "http://*.localhost http://localhost"
+        expect(policy).toBe(`frame-ancestors ${wc} ${vercel} ${localhost}`)
+      }
     })
   })
   describe('index.js', () => {

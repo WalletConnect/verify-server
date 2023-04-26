@@ -3,9 +3,9 @@ pub mod redis;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait AttestationStore {
+pub trait AttestationStore: Send + Sync + 'static {
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<()>;
-    async fn get_attestation(&self, id: &str) -> Result<String>;
+    async fn get_attestation(&self, id: &str) -> Result<Option<String>>;
 }
 
 pub type Error = anyhow::Error;
