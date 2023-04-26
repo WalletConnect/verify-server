@@ -2,7 +2,7 @@ use {
     crate::{Bouncer, Domain, GetAllowedDomainsError},
     axum::{
         extract::{Path, State},
-        response::{Html, IntoResponse},
+        response::{Html, IntoResponse, Response},
         routing::{get, post},
         Router,
     },
@@ -72,14 +72,21 @@ const INDEX_HTML: &str = r#"
 </html>
 "#;
 
+const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
+                                   that the project is registered on cloud.walletconnect.com";
+
+const NO_VERIFIED_DOMAINS_MSG: &str = "Project with the provided ID doesn't have a verified \
+                                       domain. Please, verify your domain on \
+                                       cloud.walletconnect.com";
+
 #[instrument(level = "debug", skip(app))]
 pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<String>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, Response> {
     let domains = app.get_allowed_domains(&project_id).await?;
     if domains.is_empty() {
-        return Err(StatusCode::NOT_FOUND);
+        return Err((StatusCode::NOT_FOUND, NO_VERIFIED_DOMAINS_MSG).into_response());
     }
 
     let headers = [(
@@ -90,11 +97,13 @@ pub async fn root(
     Ok((headers, Html(INDEX_HTML)))
 }
 
-impl From<GetAllowedDomainsError> for StatusCode {
+impl From<GetAllowedDomainsError> for Response {
     fn from(e: GetAllowedDomainsError) -> Self {
         match e {
-            GetAllowedDomainsError::UnknownProject => StatusCode::NOT_FOUND,
-            GetAllowedDomainsError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            GetAllowedDomainsError::UnknownProject => {
+                (StatusCode::NOT_FOUND, UNKNOWN_PROJECT_MSG).into_response()
+            }
+            GetAllowedDomainsError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
 }
