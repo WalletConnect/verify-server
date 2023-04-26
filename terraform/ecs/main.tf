@@ -61,9 +61,7 @@ resource "aws_ecs_task_definition" "app_task_definition" {
       environment = [
         { name = "PORT", value = "8080" },
         { name = "LOG_LEVEL", value = "INFO" },
-        { name = "TELEMETRY_ENABLED", value = "true" },
-        { name = "TELEMETRY_GRPC_URL", value = "http://localhost:4317" },
-        { name = "TELEMETRY_PROMETHEUS_PORT", value = "8081" },
+        { name = "PROMETHEUS_PORT", value = "8081" },
         { name = "ATTESTATION_CACHE_URL", value = "redis://${var.redis_url}/0" },
         { name = "PROJECT_REGISTRY_CACHE_URL", value = "redis://${var.redis_url}/1" },
         { name = "PROJECT_REGISTRY_URL", value = var.project_registry_url },
