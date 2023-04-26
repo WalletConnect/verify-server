@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.17.0 - 2023-04-26
+#### Features
+- Grafana (#17) - (3ecf2f9) - xDarksome
+- - -
+
 ## v0.16.0 - 2023-04-26
 #### Features
 - Operational Readiness: o11y (#15) - (c6cef9b) - xDarksome
