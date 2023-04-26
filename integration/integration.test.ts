@@ -1,5 +1,9 @@
 import axios from 'axios'
 
+const http = axios.create({
+  validateStatus: (_status) => true,
+})
+
 declare let process: {
   env: {
     JEST_ENV: string,
@@ -26,7 +30,7 @@ describe('verify', () => {
     const url = `${BASE_URL}/health`
 
     it('is healthy', async () => {
-      const { status } = await axios.get(`${url}`)
+      const { status } = await http.get(`${url}`)
 
       expect(status).toBe(200)
     })
@@ -35,11 +39,11 @@ describe('verify', () => {
     const url = `${BASE_URL}/attestation`
 
     it('can set an attestation', async () => {
-      let resp: any = await axios.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
+      let resp: any = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
 
       expect(resp.status).toBe(200)
 
-      resp = await axios.get(`${url}/some`)
+      resp = await http.get(`${url}/some`)
 
       expect(resp.status).toBe(200)
       expect(resp.data.origin).toBe('localhost')
@@ -49,7 +53,7 @@ describe('verify', () => {
     const url = `${BASE_URL}`
 
     it('get the enclave', async () => {
-      let resp: any = await axios.get(`${url}/${TEST_PROJECT_ID}`)
+      let resp: any = await http.get(`${url}/${TEST_PROJECT_ID}`)
 
       expect(resp.status).toBe(200)
 
@@ -66,17 +70,19 @@ describe('verify', () => {
     })
 
     it('non-existent project', async () => {
-      let promise = axios.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
-      await expect(promise).rejects.toThrowError('404')    
+      let resp = await http.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
+      expect(resp.status).toBe(404)
+      expect(resp.data).toContain("Project with the provided ID doesn't exist")
     })
 
     it('project without a verified domain', async () => {
-      let promise = axios.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
+      let resp = await http.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
 
       if (ENV === 'prod') {
-        await expect(promise).rejects.toThrowError('404')    
+        expect(resp.status).toBe(404)
+        expect(resp.data).toContain("Project with the provided ID doesn't have a verified domain")
       } else {
-        let policy = (await promise).headers["content-security-policy"]
+        let policy = resp.headers["content-security-policy"]
 
         let wc = "https://*.walletconnect.com https://walletconnect.com"
         let vercel = "https://*.vercel.app https://vercel.app"
@@ -89,7 +95,7 @@ describe('verify', () => {
     const url = `${BASE_URL}`
 
     it('get index.js', async () => {
-      let resp: any = await axios.get(`${url}/index.js`)
+      let resp: any = await http.get(`${url}/index.js`)
       expect(resp.status).toBe(200)
     })
   })
