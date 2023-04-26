@@ -11,7 +11,6 @@ use {
     hyper::{header, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
-    tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
 };
 
@@ -44,7 +43,6 @@ pub async fn run(
         .route("/attestation", post(attestation::post))
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
-        .layer(CorsLayer::new().allow_origin(cors::Any))
         .layer(metrics_layer)
         .with_state(Arc::new(app))
         .into_make_service()
@@ -79,12 +77,15 @@ pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let content_security = app
-        .get_allowed_domains(&project_id)
-        .await
-        .map(build_content_security_header)?;
+    let domains = app.get_allowed_domains(&project_id).await?;
+    if domains.is_empty() {
+        return Err(StatusCode::NOT_FOUND);
+    }
 
-    let headers = [(header::CONTENT_SECURITY_POLICY, content_security)];
+    let headers = [(
+        header::CONTENT_SECURITY_POLICY,
+        build_content_security_header(domains),
+    )];
 
     Ok((headers, Html(INDEX_HTML)))
 }

@@ -1,6 +1,6 @@
 [package]
 name = "bouncer"
-version = "0.14.0"
+version = "0.16.0"
 edition = "2021"
 authors = [
     "Derek <derek@walletconnect.com>"
@@ -18,7 +18,7 @@ hyper = "0.14"
 
 # Infra
 deadpool-redis = "0.10"
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", rev = "696a5a70481789e571cd96802566369f0230cd2f" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.4.0" }
 
 # O11y
 tracing = "0.1"

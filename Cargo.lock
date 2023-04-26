@@ -156,7 +156,7 @@ checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
 name = "bouncer"
-version = "0.14.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -311,7 +311,7 @@ dependencies = [
 [[package]]
 name = "cerberus"
 version = "0.2.0"
-source = "git+https://github.com/WalletConnect/cerberus.git?rev=696a5a70481789e571cd96802566369f0230cd2f#696a5a70481789e571cd96802566369f0230cd2f"
+source = "git+https://github.com/WalletConnect/cerberus.git?tag=v0.4.0#ea9c41e5a1a678ce2c047a12b8c4d2f7de5f7d45"
 dependencies = [
  "async-trait",
  "once_cell",

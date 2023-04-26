@@ -42,7 +42,6 @@ describe('verify', () => {
       resp = await axios.get(`${url}/some`)
 
       expect(resp.status).toBe(200)
-      expect(resp.headers["access-control-allow-origin"]).toBe("*")
       expect(resp.data.origin).toBe('localhost')
     })
   })
@@ -63,13 +62,27 @@ describe('verify', () => {
         let vercel = "https://*.vercel.app https://vercel.app"
         let localhost = "http://*.localhost http://localhost"
         expect(policy).toBe(`frame-ancestors ${wc} ${wc} ${vercel} ${localhost}`)
-        expect(resp.headers["access-control-allow-origin"]).toBe("*")
       }
     })
 
     it('non-existent project', async () => {
       let promise = axios.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
       await expect(promise).rejects.toThrowError('404')    
+    })
+
+    it('project without a verified domain', async () => {
+      let promise = axios.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)
+
+      if (ENV === 'prod') {
+        await expect(promise).rejects.toThrowError('404')    
+      } else {
+        let policy = (await promise).headers["content-security-policy"]
+
+        let wc = "https://*.walletconnect.com https://walletconnect.com"
+        let vercel = "https://*.vercel.app https://vercel.app"
+        let localhost = "http://*.localhost http://localhost"
+        expect(policy).toBe(`frame-ancestors ${wc} ${vercel} ${localhost}`)
+      }
     })
   })
   describe('index.js', () => {
@@ -78,7 +91,6 @@ describe('verify', () => {
     it('get index.js', async () => {
       let resp: any = await axios.get(`${url}/index.js`)
       expect(resp.status).toBe(200)
-      expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
   })
 })
