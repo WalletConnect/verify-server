@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.16.0 - 2023-04-26
+#### Features
+- Operational Readiness: o11y (#15) - (c6cef9b) - xDarksome
+- - -
+
 ## v0.15.0 - 2023-04-24
 #### Features
 - Build Content-Security-Policy header based on ProjectData::verified_domains (#14) - (8e16abc) - xDarksome
