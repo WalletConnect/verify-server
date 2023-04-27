@@ -1,5 +1,6 @@
 use {
-    anyhow::Context as _,
+    anyhow::{anyhow, Context as _},
+    axum::response::{IntoResponse, Response},
     axum_prometheus::{
         metrics_exporter_prometheus::{Matcher as MetricMatcher, PrometheusBuilder},
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
@@ -11,10 +12,14 @@ use {
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},
+    hyper::StatusCode,
+    once_cell::sync::Lazy,
     serde::{Deserialize, Deserializer},
     std::{future::Future, str::FromStr},
+    tap::TapFallible,
+    tempfile::tempfile,
     tokio::signal::unix::{signal, SignalKind},
-    tracing::info,
+    tracing::{error, info},
 };
 
 #[derive(Deserialize, Debug, Clone)]
@@ -44,8 +49,6 @@ pub struct Configuration {
     #[serde(default)]
     pub domain_whitelist: Vec<Domain>,
 }
-
-build_info::build_info!(fn build_info);
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -118,23 +121,51 @@ fn shutdown_signals() -> Result<impl Future, anyhow::Error> {
     ))
 }
 
-fn health_provider() -> String {
-    let build_info = build_info();
-    let name = &build_info.crate_info.name;
-    let version = &build_info.crate_info.version;
+fn health_provider() -> Response {
+    fn checks() -> Result<(), anyhow::Error> {
+        const MAX_USED_MEMORY_PERCENT: f32 = 75.0;
 
-    let Some(git) = build_info.version_control.as_ref().and_then(VersionControl::git) else {
-        return format!("{} v{}", name, version);
-    };
+        let memory = sys_info::mem_info().context("Failed to get memory info")?;
+        let used_memory_perc = (memory.total - memory.avail) as f32 / memory.total as f32 * 100.0;
+        if used_memory_perc > MAX_USED_MEMORY_PERCENT {
+            return Err(anyhow!(
+                "Memory usage is critical! {:.2}%",
+                used_memory_perc
+            ));
+        }
 
-    format!(
-        "{} v{}, commit: {}, timestamp: {}, branch: {}",
-        name,
-        version,
-        git.commit_short_id,
-        git.commit_timestamp,
-        git.branch.as_deref().unwrap_or_default(),
-    )
+        tempfile()
+            .map(drop)
+            .context("Failed to create a temp file, seems like the disk isn't operational")
+    }
+
+    let status_code = checks()
+        .map(|_| StatusCode::OK)
+        .tap_err(|e| error!("Health check failed: {e:?}"))
+        .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+
+    static BODY: Lazy<String> = Lazy::new(|| {
+        build_info::build_info!(fn build_info);
+
+        let build_info = build_info();
+        let name = &build_info.crate_info.name;
+        let version = &build_info.crate_info.version;
+
+        let Some(git) = build_info.version_control.as_ref().and_then(VersionControl::git) else {
+            return format!("{} v{}", name, version);
+        };
+
+        format!(
+            "{} v{}, commit: {}, timestamp: {}, branch: {}",
+            name,
+            version,
+            git.commit_short_id,
+            git.commit_timestamp,
+            git.branch.as_deref().unwrap_or_default(),
+        )
+    });
+
+    (status_code, BODY.clone()).into_response()
 }
 
 fn default_port() -> u16 {

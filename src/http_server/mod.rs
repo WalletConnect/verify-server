@@ -24,7 +24,7 @@ pub async fn run(
     port: u16,
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     metrics_port: u16,
-    health_provider: impl Fn() -> String + Clone + Send + 'static,
+    health_provider: impl Fn() -> Response + Clone + Send + 'static,
     shutdown: impl Future,
 ) {
     let shutdown = shutdown
