@@ -1,5 +1,5 @@
 use {
-    crate::{Bouncer, Domain, GetAllowedDomainsError},
+    crate::{Bouncer, Domain, GetAllowedDomainsError, ProjectId},
     axum::{
         extract::{Path, State},
         response::{Html, IntoResponse, Response},
@@ -82,9 +82,9 @@ const NO_VERIFIED_DOMAINS_MSG: &str = "Project with the provided ID doesn't have
 #[instrument(level = "debug", skip(app))]
 pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
-    Path(project_id): Path<String>,
+    Path(project_id): Path<ProjectId>,
 ) -> Result<impl IntoResponse, Response> {
-    let domains = app.get_allowed_domains(&project_id).await?;
+    let domains = app.get_allowed_domains(project_id).await?;
     if domains.is_empty() {
         return Err((StatusCode::NOT_FOUND, NO_VERIFIED_DOMAINS_MSG).into_response());
     }

@@ -69,6 +69,25 @@ describe('verify', () => {
       }
     })
 
+    describe('invalid project ID', () => {
+      let errMsg = "Invalid URL: ProjectId should be a hex string 32 chars long"
+      it('too short', async () => {
+        let resp = await http.get(`${url}/aaaaaaaaaa`)
+        expect(resp.status).toBe(400)
+        expect(resp.data).toBe(errMsg)
+      })
+      it('too long', async () => {
+        let resp = await http.get(`${url}/3bc51577baa09be45c84b85f13419ae8a`)
+        expect(resp.status).toBe(400)
+        expect(resp.data).toBe(errMsg)
+      })
+      it('non-hex chars', async () => {
+        let resp = await http.get(`${url}/3bc51577baa09be45c84b85f13419aez`)
+        expect(resp.status).toBe(400)
+        expect(resp.data).toBe(errMsg)
+      })
+    })
+
     it('non-existent project', async () => {
       let resp = await http.get(`${url}/3bc51577baa09be45c84b85f13419ae8`)
       expect(resp.status).toBe(404)
