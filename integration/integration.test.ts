@@ -40,13 +40,16 @@ describe('verify', () => {
 
     it('can set an attestation', async () => {
       let resp: any = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'})
-
       expect(resp.status).toBe(200)
+      expect(resp.headers["access-control-allow-origin"]).toBe(undefined)
+
+      resp = await http.options(`${url}/some`);
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
 
       resp = await http.get(`${url}/some`)
-
       expect(resp.status).toBe(200)
       expect(resp.data.origin).toBe('localhost')
+      expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
   })
   describe('Enclave', () => {
