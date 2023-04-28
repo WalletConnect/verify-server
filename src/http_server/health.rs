@@ -1,7 +1,7 @@
-use {hyper::StatusCode, std::future};
+use {axum::response::Response, std::future};
 
 pub fn get(
-    provider: impl Fn() -> String + Clone + Send + 'static,
-) -> impl Fn() -> future::Ready<(StatusCode, String)> + Clone + Send + 'static {
-    move || future::ready((StatusCode::OK, provider()))
+    provider: impl Fn() -> Response + Clone + Send + 'static,
+) -> impl Fn() -> future::Ready<Response> + Clone + Send + 'static {
+    move || future::ready(provider())
 }
