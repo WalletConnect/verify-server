@@ -8,9 +8,10 @@ use {
     },
     axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
     futures::FutureExt,
-    hyper::{header, StatusCode},
+    hyper::{header, Method, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
+    tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
 };
 
@@ -31,6 +32,10 @@ pub async fn run(
         .map(|_| info!("Shutting down servers gracefully"))
         .shared();
 
+    let cors_layer = CorsLayer::new()
+        .allow_origin(cors::Any)
+        .allow_methods([Method::OPTIONS, Method::GET]);
+
     let metrics_layer = MetricLayerBuilder::new()
         // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
         // of junk like "/+CSCOE+/logon.html".
@@ -38,8 +43,9 @@ pub async fn run(
         .build();
 
     let server = Router::new()
-        .route("/health", get(health::get(health_provider)))
         .route("/attestation/:attestation_id", get(attestation::get))
+        .layer(cors_layer)
+        .route("/health", get(health::get(health_provider)))
         .route("/attestation", post(attestation::post))
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
