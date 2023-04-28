@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.19.0 - 2023-04-28
+#### Features
+- Impl proper CORS for {OPTIONS,GET} /attestation/{id} (#16) - (ec75150) - xDarksome
+- - -
+
 ## v0.18.0 - 2023-04-26
 #### Bug Fixes
 - Grafana data source uids - (3b8ea46) - Darksome
