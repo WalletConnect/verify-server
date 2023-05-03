@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.20.0 - 2023-05-03
+#### Features
+- Allow localhost on prod - (f895c61) - xDarksome
+- - -
+
 ## v0.19.0 - 2023-04-28
 #### Features
 - Impl proper CORS for {OPTIONS,GET} /attestation/{id} (#16) - (ec75150) - xDarksome
