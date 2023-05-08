@@ -95,12 +95,13 @@ pub async fn root(
         return Err((StatusCode::NOT_FOUND, NO_VERIFIED_DOMAINS_MSG).into_response());
     }
 
-    let headers = [(
+    // TODO: enable once clients are ready
+    let _headers = [(
         header::CONTENT_SECURITY_POLICY,
         build_content_security_header(domains),
     )];
 
-    Ok((headers, Html(INDEX_HTML)))
+    Ok(Html(INDEX_HTML))
 }
 
 impl From<GetAllowedDomainsError> for Response {
