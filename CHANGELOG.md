@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.21.0 - 2023-05-08
+#### Features
+- Temporary disable Content-Security-Policy (#27) - (d8f3694) - xDarksome
+- - -
+
 ## v0.20.0 - 2023-05-03
 #### Features
 - Allow localhost on prod - (f895c61) - xDarksome
