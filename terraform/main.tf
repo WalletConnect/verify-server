@@ -75,7 +75,7 @@ module "redis" {
 
   redis_name                  = "${terraform.workspace}-${local.app_name}"
   app_name                    = local.app_name
-  node_type                   = "cache.m6g.large"
+  node_type                   = "cache.t4g.micro"
   vpc_id                      = module.vpc.vpc_id
   allowed_egress_cidr_blocks  = [module.vpc.vpc_cidr_block]
   allowed_ingress_cidr_blocks = [module.vpc.vpc_cidr_block]
