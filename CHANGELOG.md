@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.22.0 - 2023-05-22
+#### Bug Fixes
+- update Grafana version - (d012342) - Darksome
+#### Features
+- **(infra)** downsize redis - (e7449eb) - Derek
+- - -
+
 ## v0.21.1 - 2023-05-11
 #### Bug Fixes
 - don't post /attestation if attestationId is invalid (#28) - (029e130) - xDarksome
