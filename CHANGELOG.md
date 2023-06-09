@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.23.0 - 2023-06-09
+#### Features
+- add project issues workflow, update project id (#32) - (727ccbc) - Xavier Basty
+- - -
+
 ## v0.22.0 - 2023-05-22
 #### Bug Fixes
 - update Grafana version - (d012342) - Darksome
