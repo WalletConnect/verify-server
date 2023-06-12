@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.24.1 - 2023-06-12
+#### Bug Fixes
+- **(terraform)** update hashicorp/aws version (#34) - (65ff9d1) - xDarksome
+- - -
+
 ## v0.24.0 - 2023-06-12
 #### Features
 - Validate project IDs (#25, #33) - (bf86b33) - xDarksome
