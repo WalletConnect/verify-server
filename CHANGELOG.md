@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.24.0 - 2023-06-12
+#### Features
+- Validate project IDs (#25, #33) - (bf86b33) - xDarksome
+- - -
+
 ## v0.23.0 - 2023-06-09
 #### Features
 - add project issues workflow, update project id (#32) - (727ccbc) - Xavier Basty
