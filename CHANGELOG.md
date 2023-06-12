@@ -2,6 +2,38 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.23.0 - 2023-06-09
+#### Features
+- add project issues workflow, update project id (#32) - (727ccbc) - Xavier Basty
+- - -
+
+## v0.22.0 - 2023-05-22
+#### Bug Fixes
+- update Grafana version - (d012342) - Darksome
+#### Features
+- **(infra)** downsize redis - (e7449eb) - Derek
+- - -
+
+## v0.21.1 - 2023-05-11
+#### Bug Fixes
+- don't post /attestation if attestationId is invalid (#28) - (029e130) - xDarksome
+- - -
+
+## v0.21.0 - 2023-05-08
+#### Features
+- Temporary disable Content-Security-Policy (#27) - (d8f3694) - xDarksome
+- - -
+
+## v0.20.0 - 2023-05-03
+#### Features
+- Allow localhost on prod - (f895c61) - xDarksome
+- - -
+
+## v0.19.0 - 2023-04-28
+#### Features
+- Impl proper CORS for {OPTIONS,GET} /attestation/{id} (#16) - (ec75150) - xDarksome
+- - -
+
 ## v0.18.0 - 2023-04-26
 #### Bug Fixes
 - Grafana data source uids - (3b8ea46) - Darksome
