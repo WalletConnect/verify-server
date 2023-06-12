@@ -5,6 +5,7 @@ pub use {
     project_registry::ProjectRegistry,
 };
 use {
+    arrayvec::ArrayString,
     derive_more::{AsRef, From},
     serde::{Deserialize, Serialize},
     tap::TapFallible,
@@ -20,7 +21,7 @@ pub mod util;
 pub trait Bouncer: Send + Sync + 'static {
     async fn get_allowed_domains(
         &self,
-        project_id: &str,
+        project_id: ProjectId,
     ) -> Result<Vec<Domain>, GetAllowedDomainsError>;
 
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
@@ -38,6 +39,27 @@ pub enum GetAllowedDomainsError {
 
 #[derive(AsRef, Clone, Debug, From, Serialize, Deserialize)]
 pub struct Domain(String);
+
+#[derive(AsRef, Clone, Copy, Debug)]
+#[as_ref(forward)]
+pub struct ProjectId(ArrayString<32>);
+
+impl<'de> Deserialize<'de> for ProjectId {
+    fn deserialize<D>(de: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error as _;
+
+        ArrayString::<32>::deserialize(de)
+            .ok()
+            .filter(|s| s.len() == 32 && !s.chars().any(|c| !c.is_ascii_hexdigit()))
+            .map(Self)
+            .ok_or(D::Error::custom(
+                "ProjectId should be a hex string 32 chars long",
+            ))
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProjectData {
@@ -61,7 +83,7 @@ impl<I: Infra> Bouncer for App<I> {
     #[instrument(level = "warn", skip(self))]
     async fn get_allowed_domains(
         &self,
-        project_id: &str,
+        project_id: ProjectId,
     ) -> Result<Vec<Domain>, GetAllowedDomainsError> {
         let mut domains = self
             .project_registry()

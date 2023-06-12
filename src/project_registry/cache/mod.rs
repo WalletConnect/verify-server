@@ -1,6 +1,6 @@
 use {
     super::{ProjectData, Result},
-    crate::{async_trait, ProjectRegistry},
+    crate::{async_trait, ProjectId, ProjectRegistry},
     metrics::counter,
     tap::TapFallible as _,
     tracing::{debug, error, instrument},
@@ -18,8 +18,8 @@ fn deserialize_data(bytes: &[u8]) -> Result<Option<ProjectData>> {
 
 #[async_trait]
 pub trait Cache: Clone + Send + Sync + 'static {
-    async fn set_data(&self, project_id: &str, data: &Option<ProjectData>) -> Result<()>;
-    async fn get_data(&self, project_id: &str) -> Result<Output>;
+    async fn set_data(&self, project_id: ProjectId, data: &Option<ProjectData>) -> Result<()>;
+    async fn get_data(&self, project_id: ProjectId) -> Result<Output>;
 }
 
 // Option<Option<_>> is gross and I just shot myself in the foot with it.
@@ -52,7 +52,7 @@ where
     C: Cache,
 {
     #[instrument(level = "debug", skip(self))]
-    async fn project_data(&self, id: &str) -> Result<Option<ProjectData>> {
+    async fn project_data(&self, id: ProjectId) -> Result<Option<ProjectData>> {
         match self.cache.get_data(id).await {
             Ok(Output::Hit(data)) => {
                 debug!("get: hit");
@@ -72,13 +72,12 @@ where
         let data = self.registry.project_data(id).await?;
 
         let cache = self.cache.clone();
-        let id = id.to_string();
         let data_clone = data.clone();
 
         // Do not block on cache write.
         tokio::spawn(async move {
             let _ = cache
-                .set_data(&id, &data_clone)
+                .set_data(id, &data_clone)
                 .await
                 .tap_err(|e| error!("set: {e:?}"))
                 .tap_err(|_| counter!("project_registry_cache_write_errors", 1))
