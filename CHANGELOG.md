@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.24.2 - 2023-06-14
+#### Bug Fixes
+- remove redundant project actions (#38) - (2f48904) - Xavier Basty
+- - -
+
 ## v0.24.1 - 2023-06-12
 #### Bug Fixes
 - **(terraform)** update hashicorp/aws version (#34) - (65ff9d1) - xDarksome
