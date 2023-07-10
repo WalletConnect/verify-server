@@ -118,7 +118,11 @@ fn health_provider() -> String {
     let name = &build_info.crate_info.name;
     let version = &build_info.crate_info.version;
 
-    let Some(git) = build_info.version_control.as_ref().and_then(VersionControl::git) else {
+    let Some(git) = build_info
+        .version_control
+        .as_ref()
+        .and_then(VersionControl::git)
+    else {
         return format!("{} v{}", name, version);
     };
 
