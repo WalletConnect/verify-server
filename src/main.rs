@@ -7,10 +7,10 @@ use {
     bouncer::{
         project_registry::{self, CachedExt as _},
         util::redis,
-        Domain,
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},
+    rand::RngCore,
     serde::{Deserialize, Deserializer},
     std::{future::Future, str::FromStr},
     tokio::signal::unix::{signal, SignalKind},
@@ -37,12 +37,6 @@ pub struct Configuration {
     pub project_registry_url: String,
     pub project_registry_auth_token: String,
     pub project_registry_cache_url: String,
-
-    /// Additional domains to allow the Enclave to be served on.
-    ///
-    /// Intended for testing purposes on dev environments.
-    #[serde(default)]
-    pub domain_whitelist: Vec<Domain>,
 }
 
 build_info::build_info!(fn build_info);
@@ -90,14 +84,15 @@ async fn main() -> Result<(), anyhow::Error> {
     .context("Failed to initialize ProjectRegistry")?
     .cached(project_registry_cache);
 
-    let app = bouncer::new(
-        config.domain_whitelist,
-        (attestation_store, project_registry),
-    );
+    let app = bouncer::new((attestation_store, project_registry));
+
+    let mut session_secret = [0; 64];
+    rand::thread_rng().try_fill_bytes(&mut session_secret)?;
 
     bouncer::http_server::run(
         app,
         config.port,
+        &session_secret,
         move || prometheus.render(),
         config.prometheus_port,
         health_provider,

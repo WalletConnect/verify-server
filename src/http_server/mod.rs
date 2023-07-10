@@ -1,12 +1,14 @@
 use {
-    crate::{Bouncer, Domain, GetAllowedDomainsError, ProjectId},
+    crate::{Bouncer, Domain, GetVerifyStatusError, ProjectId, VerifyStatus},
     axum::{
         extract::{Path, State},
         response::{Html, IntoResponse, Response},
         routing::{get, post},
         Router,
     },
+    axum_csrf_sync_pattern::CsrfLayer,
     axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
+    axum_sessions::{async_session, SessionLayer},
     futures::FutureExt,
     hyper::{header, Method, StatusCode},
     std::{future::Future, iter, net::SocketAddr, sync::Arc},
@@ -23,6 +25,7 @@ mod metrics;
 pub async fn run(
     app: impl Bouncer,
     port: u16,
+    session_secret: &[u8],
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     metrics_port: u16,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
@@ -36,6 +39,8 @@ pub async fn run(
         .allow_origin(cors::Any)
         .allow_methods([Method::OPTIONS, Method::GET]);
 
+    let session_layer = SessionLayer::new(async_session::MemoryStore::new(), session_secret);
+
     let metrics_layer = MetricLayerBuilder::new()
         // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
         // of junk like "/+CSCOE+/logon.html".
@@ -45,10 +50,12 @@ pub async fn run(
     let server = Router::new()
         .route("/attestation/:attestation_id", get(attestation::get))
         .layer(cors_layer)
-        .route("/health", get(health::get(health_provider)))
         .route("/attestation", post(attestation::post))
-        .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
+        .layer(CsrfLayer::new())
+        .layer(session_layer)
+        .route("/health", get(health::get(health_provider)))
+        .route("/index.js", get(index_js::get))
         .layer(metrics_layer)
         .with_state(Arc::new(app))
         .into_make_service()
@@ -81,36 +88,29 @@ const INDEX_HTML: &str = r#"
 const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
                                    that the project is registered on cloud.walletconnect.com";
 
-const NO_VERIFIED_DOMAINS_MSG: &str = "Project with the provided ID doesn't have a verified \
-                                       domain. Please, verify your domain on \
-                                       cloud.walletconnect.com";
-
 #[instrument(level = "debug", skip(app))]
 pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<ProjectId>,
 ) -> Result<impl IntoResponse, Response> {
-    let domains = app.get_allowed_domains(project_id).await?;
-    if domains.is_empty() {
-        return Err((StatusCode::NOT_FOUND, NO_VERIFIED_DOMAINS_MSG).into_response());
-    }
+    let headers = match app.get_verify_status(project_id).await? {
+        VerifyStatus::Disabled => None,
+        VerifyStatus::Enabled { verified_domains } => Some([(
+            header::CONTENT_SECURITY_POLICY,
+            build_content_security_header(verified_domains),
+        )]),
+    };
 
-    // TODO: enable once clients are ready
-    let _headers = [(
-        header::CONTENT_SECURITY_POLICY,
-        build_content_security_header(domains),
-    )];
-
-    Ok(Html(INDEX_HTML))
+    Ok((headers, Html(INDEX_HTML)))
 }
 
-impl From<GetAllowedDomainsError> for Response {
-    fn from(e: GetAllowedDomainsError) -> Self {
+impl From<GetVerifyStatusError> for Response {
+    fn from(e: GetVerifyStatusError) -> Self {
         match e {
-            GetAllowedDomainsError::UnknownProject => {
+            GetVerifyStatusError::UnknownProject => {
                 (StatusCode::NOT_FOUND, UNKNOWN_PROJECT_MSG).into_response()
             }
-            GetAllowedDomainsError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            GetVerifyStatusError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
 }

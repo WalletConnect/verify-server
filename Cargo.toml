@@ -12,13 +12,15 @@ tokio = { version = "1", features = ["full"] }
 
 # Http
 axum = { version = "0.6", features = ["json"] }
+axum-sessions = "0.5"
+axum-csrf-sync-pattern = "0.3"
 tower = "0.4"
 tower-http = { version = "0.3", features = ["cors", "trace"] }
 hyper = "0.14"
 
 # Infra
 deadpool-redis = "0.10"
-cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.4.0" }
+cerberus = { git = "https://github.com/WalletConnect/cerberus.git", rev = "83217c8dddee6b0857ca75cac91123aa430a0667" }
 
 # O11y
 tracing = "0.1"
@@ -40,6 +42,7 @@ derive_more = "0.99"
 envy = "0.4"
 futures = "0.3"
 log = "0.4"
+rand = "0.8"
 thiserror = "1.0"
 tap = "1.0"
 

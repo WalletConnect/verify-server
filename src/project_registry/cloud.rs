@@ -26,7 +26,9 @@ impl ProjectRegistry for RegistryHttpClient {
             return Ok(None);
         };
 
-        let verified_domains = data.verified_domains.into_iter().map(Domain).collect();
-        Ok(Some(ProjectData { verified_domains }))
+        Ok(Some(ProjectData {
+            is_verify_enabled: data.is_verify_enabled,
+            verified_domains: data.verified_domains.into_iter().map(Domain).collect(),
+        }))
     }
 }
