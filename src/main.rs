@@ -10,7 +10,6 @@ use {
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},
-    rand::RngCore,
     serde::{Deserialize, Deserializer},
     std::{future::Future, str::FromStr},
     tokio::signal::unix::{signal, SignalKind},
@@ -37,6 +36,8 @@ pub struct Configuration {
     pub project_registry_url: String,
     pub project_registry_auth_token: String,
     pub project_registry_cache_url: String,
+
+    pub secret: String,
 }
 
 build_info::build_info!(fn build_info);
@@ -86,13 +87,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let app = bouncer::new((attestation_store, project_registry));
 
-    let mut session_secret = [0; 64];
-    rand::thread_rng().try_fill_bytes(&mut session_secret)?;
-
     bouncer::http_server::run(
         app,
         config.port,
-        &session_secret,
+        config.secret.as_bytes(),
         move || prometheus.render(),
         config.prometheus_port,
         health_provider,

@@ -12,6 +12,10 @@ variable "region" {
   default = "eu-central-1"
 }
 
+variable "secret" {
+  type = string
+}
+
 variable "azs" {
   type    = list(string)
   default = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]

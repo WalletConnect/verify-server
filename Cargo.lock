@@ -346,7 +346,6 @@ dependencies = [
  "log",
  "metrics",
  "prometheus",
- "rand",
  "rmp-serde",
  "serde",
  "tap",

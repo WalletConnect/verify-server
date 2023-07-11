@@ -42,7 +42,6 @@ derive_more = "0.99"
 envy = "0.4"
 futures = "0.3"
 log = "0.4"
-rand = "0.8"
 thiserror = "1.0"
 tap = "1.0"
 

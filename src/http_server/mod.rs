@@ -11,7 +11,7 @@ use {
     axum_sessions::{async_session, SessionLayer},
     futures::FutureExt,
     hyper::{header, Method, StatusCode},
-    std::{future::Future, iter, net::SocketAddr, sync::Arc},
+    std::{future::Future, iter, net::SocketAddr, sync::Arc, time::Duration},
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
@@ -39,7 +39,8 @@ pub async fn run(
         .allow_origin(cors::Any)
         .allow_methods([Method::OPTIONS, Method::GET]);
 
-    let session_layer = SessionLayer::new(async_session::MemoryStore::new(), session_secret);
+    let session_layer = SessionLayer::new(async_session::CookieStore, session_secret)
+        .with_session_ttl(Some(Duration::from_secs(60 * 60))); // 1 hour
 
     let metrics_layer = MetricLayerBuilder::new()
         // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
@@ -92,16 +93,14 @@ const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. P
 pub async fn root(
     State(app): State<Arc<impl Bouncer>>,
     Path(project_id): Path<ProjectId>,
-) -> Result<impl IntoResponse, Response> {
-    let headers = match app.get_verify_status(project_id).await? {
-        VerifyStatus::Disabled => None,
-        VerifyStatus::Enabled { verified_domains } => Some([(
-            header::CONTENT_SECURITY_POLICY,
-            build_content_security_header(verified_domains),
-        )]),
-    };
-
-    Ok((headers, Html(INDEX_HTML)))
+) -> Result<Response, Response> {
+    Ok(match app.get_verify_status(project_id).await? {
+        VerifyStatus::Disabled => String::new().into_response(),
+        VerifyStatus::Enabled { verified_domains } => {
+            let csp = build_content_security_header(verified_domains);
+            ([(header::CONTENT_SECURITY_POLICY, csp)], Html(INDEX_HTML)).into_response()
+        }
+    })
 }
 
 impl From<GetVerifyStatusError> for Response {
