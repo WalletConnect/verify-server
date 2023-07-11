@@ -29,7 +29,7 @@ variable "project_registry_auth_token" {
 }
 
 variable "secret" {
-  type    = string
+  type = string
 }
 
 variable "prometheus_endpoint" {
