@@ -40,7 +40,7 @@ pub enum VerifyStatus {
     },
 }
 
-/// Error of getting [`Verification`] via [`Bouncer::verification`].
+/// Error of getting a [`VerifyStatus`] via [`Bouncer::get_verify_status`].
 #[derive(Debug, thiserror::Error)]
 pub enum GetVerifyStatusError {
     #[error("UnknownProject")]
