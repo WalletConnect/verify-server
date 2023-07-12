@@ -21,7 +21,7 @@ const BASE_URLS = new Map<string, string>([
 
 const ENV = process.env.JEST_ENV;
 
-const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || '3cbaa32f8fbf3cdcc87d27ca1fa68069'
+const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID || 'e4eae1aad4503db9966a04fd045a7e4d'
 
 const BASE_URL = BASE_URLS.get(process.env.JEST_ENV)
 
@@ -95,8 +95,8 @@ describe('verify', () => {
       expect(resp.data).toContain("Project with the provided ID doesn't exist")
     })
 
-    it('project without a verified domain', async () => {
-      let resp = await http.get(`${url}/22f5c861aeb01d5928e9f347df79f21b`)      
+    it('project without a Verify disabled', async () => {
+      let resp = await http.get(`${url}/0eae574067d750bb4a5e84bb99b5845f`)      
       expect(resp.status).toBe(200)
 
       let policy = resp.headers["content-security-policy"]
