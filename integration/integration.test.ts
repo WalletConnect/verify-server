@@ -67,7 +67,7 @@ describe('verify', () => {
       expect(resp.status).toBe(200)
 
       let policy = resp.headers["content-security-policy"]
-      expect(policy).toBe(`frame-ancestors https://*.walletconnect.com https://walletconnect.com`)
+      expect(policy).toBe(`frame-ancestors http://*.localhost http://localhost`)
     })
 
     describe('invalid project ID', () => {
@@ -95,7 +95,7 @@ describe('verify', () => {
       expect(resp.data).toContain("Project with the provided ID doesn't exist")
     })
 
-    it('project without a Verify disabled', async () => {
+    it('project with Verify disabled', async () => {
       let resp = await http.get(`${url}/0eae574067d750bb4a5e84bb99b5845f`)      
       expect(resp.status).toBe(200)
 
