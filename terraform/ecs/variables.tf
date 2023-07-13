@@ -28,9 +28,8 @@ variable "project_registry_auth_token" {
   sensitive = true
 }
 
-variable "domain_whitelist" {
-  type    = string
-  default = ""
+variable "secret" {
+  type = string
 }
 
 variable "prometheus_endpoint" {

@@ -19,17 +19,30 @@ pub mod util;
 
 #[async_trait]
 pub trait Bouncer: Send + Sync + 'static {
-    async fn get_allowed_domains(
+    async fn get_verify_status(
         &self,
         project_id: ProjectId,
-    ) -> Result<Vec<Domain>, GetAllowedDomainsError>;
+    ) -> Result<VerifyStatus, GetVerifyStatusError>;
 
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
     async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error>;
 }
 
+/// Status of the Verify API of some project.
+pub enum VerifyStatus {
+    /// Verify API is disabled.
+    Disabled,
+
+    /// Verify API is enabled.
+    Enabled {
+        /// List of the verified domains of the project.
+        verified_domains: Vec<Domain>,
+    },
+}
+
+/// Error of getting a [`VerifyStatus`] via [`Bouncer::get_verify_status`].
 #[derive(Debug, thiserror::Error)]
-pub enum GetAllowedDomainsError {
+pub enum GetVerifyStatusError {
     #[error("UnknownProject")]
     UnknownProject,
 
@@ -63,40 +76,39 @@ impl<'de> Deserialize<'de> for ProjectId {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProjectData {
+    pub is_verify_enabled: bool,
     pub verified_domains: Vec<Domain>,
 }
 
 struct App<I> {
-    domain_whitelist: Vec<Domain>,
     infra: I,
 }
 
-pub fn new(domain_whitelist: Vec<Domain>, infra: impl Infra) -> impl Bouncer {
-    App {
-        domain_whitelist,
-        infra,
-    }
+pub fn new(infra: impl Infra) -> impl Bouncer {
+    App { infra }
 }
 
 #[async_trait]
 impl<I: Infra> Bouncer for App<I> {
     #[instrument(level = "warn", skip(self))]
-    async fn get_allowed_domains(
+    async fn get_verify_status(
         &self,
         project_id: ProjectId,
-    ) -> Result<Vec<Domain>, GetAllowedDomainsError> {
-        let mut domains = self
+    ) -> Result<VerifyStatus, GetVerifyStatusError> {
+        let project_data = self
             .project_registry()
             .project_data(project_id)
             .await
             .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
-            .ok_or(GetAllowedDomainsError::UnknownProject)
-            .tap_err(|_| warn!("Unknown project id"))?
-            .verified_domains;
+            .ok_or(GetVerifyStatusError::UnknownProject)
+            .tap_err(|_| warn!("Unknown project id"))?;
 
-        domains.extend_from_slice(&self.domain_whitelist);
+        let status = (project_data.is_verify_enabled && !project_data.verified_domains.is_empty())
+            .then_some(project_data.verified_domains)
+            .map(|verified_domains| VerifyStatus::Enabled { verified_domains })
+            .unwrap_or(VerifyStatus::Disabled);
 
-        Ok(domains)
+        Ok(status)
     }
 
     #[instrument(level = "debug", skip(self))]

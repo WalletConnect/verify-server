@@ -7,7 +7,6 @@ use {
     bouncer::{
         project_registry::{self, CachedExt as _},
         util::redis,
-        Domain,
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},
@@ -38,11 +37,7 @@ pub struct Configuration {
     pub project_registry_auth_token: String,
     pub project_registry_cache_url: String,
 
-    /// Additional domains to allow the Enclave to be served on.
-    ///
-    /// Intended for testing purposes on dev environments.
-    #[serde(default)]
-    pub domain_whitelist: Vec<Domain>,
+    pub secret: String,
 }
 
 build_info::build_info!(fn build_info);
@@ -90,14 +85,12 @@ async fn main() -> Result<(), anyhow::Error> {
     .context("Failed to initialize ProjectRegistry")?
     .cached(project_registry_cache);
 
-    let app = bouncer::new(
-        config.domain_whitelist,
-        (attestation_store, project_registry),
-    );
+    let app = bouncer::new((attestation_store, project_registry));
 
     bouncer::http_server::run(
         app,
         config.port,
+        config.secret.as_bytes(),
         move || prometheus.render(),
         config.prometheus_port,
         health_provider,
@@ -123,7 +116,11 @@ fn health_provider() -> String {
     let name = &build_info.crate_info.name;
     let version = &build_info.crate_info.version;
 
-    let Some(git) = build_info.version_control.as_ref().and_then(VersionControl::git) else {
+    let Some(git) = build_info
+        .version_control
+        .as_ref()
+        .and_then(VersionControl::git)
+    else {
         return format!("{} v{}", name, version);
     };
 
