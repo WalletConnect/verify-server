@@ -1,17 +1,22 @@
 use {
     crate::{Bouncer, Domain, GetVerifyStatusError, ProjectId, VerifyStatus},
     axum::{
-        extract::{Path, State},
+        extract::Path,
         response::{Html, IntoResponse, Response},
         routing::{get, post},
         Router,
     },
-    axum_csrf_sync_pattern::CsrfLayer,
     axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
-    axum_sessions::{async_session, SessionLayer},
     futures::FutureExt,
-    hyper::{header, Method, StatusCode},
-    std::{future::Future, iter, net::SocketAddr, sync::Arc, time::Duration},
+    hyper::{
+        header,
+        http::{HeaderName, HeaderValue},
+        HeaderMap,
+        Method,
+        StatusCode,
+    },
+    serde::{Deserialize, Serialize},
+    std::{future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
@@ -22,10 +27,18 @@ mod health;
 mod index_js;
 mod metrics;
 
+struct Server<B> {
+    bouncer: B,
+    encoding_key: jsonwebtoken::EncodingKey,
+    decoding_key: jsonwebtoken::DecodingKey,
+}
+
+type State<B> = axum::extract::State<Arc<Server<B>>>;
+
 pub async fn run(
     app: impl Bouncer,
     port: u16,
-    session_secret: &[u8],
+    secret: &[u8],
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     metrics_port: u16,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
@@ -39,26 +52,27 @@ pub async fn run(
         .allow_origin(cors::Any)
         .allow_methods([Method::OPTIONS, Method::GET]);
 
-    let session_layer = SessionLayer::new(async_session::CookieStore, session_secret)
-        .with_session_ttl(Some(Duration::from_secs(60 * 60))); // 1 hour
-
     let metrics_layer = MetricLayerBuilder::new()
         // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
         // of junk like "/+CSCOE+/logon.html".
         .with_endpoint_label_type(EndpointLabel::MatchedPathWithFallbackFn(|_| String::new()))
         .build();
 
+    let state = Server {
+        bouncer: app,
+        encoding_key: jsonwebtoken::EncodingKey::from_secret(secret),
+        decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
+    };
+
     let server = Router::new()
         .route("/attestation/:attestation_id", get(attestation::get))
         .layer(cors_layer)
-        .route("/attestation", post(attestation::post))
-        .route("/:project_id", get(root))
-        .layer(CsrfLayer::new())
-        .layer(session_layer)
         .route("/health", get(health::get(health_provider)))
+        .route("/attestation", post(attestation::post))
         .route("/index.js", get(index_js::get))
+        .route("/:project_id", get(root))
         .layer(metrics_layer)
-        .with_state(Arc::new(app))
+        .with_state(Arc::new(state))
         .into_make_service()
         .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))
@@ -77,28 +91,32 @@ pub async fn run(
     );
 }
 
-const INDEX_HTML: &str = r#"
-<!-- index.html -->
-<html>
-  <head>
-      <script src="/index.js"></script>
-  </head>
-</html>
-"#;
+fn index_html(token: &str) -> String {
+    format!(
+        "<!-- index.html --><html><head><script \
+         src=\"/index.js?token={token}\"></script></head></html>"
+    )
+}
 
 const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
                                    that the project is registered on cloud.walletconnect.com";
 
-#[instrument(level = "debug", skip(app))]
-pub async fn root(
-    State(app): State<Arc<impl Bouncer>>,
+#[instrument(level = "debug", skip(s))]
+async fn root(
+    s: State<impl Bouncer>,
     Path(project_id): Path<ProjectId>,
 ) -> Result<Response, Response> {
-    Ok(match app.get_verify_status(project_id).await? {
+    Ok(match s.bouncer.get_verify_status(project_id).await? {
         VerifyStatus::Disabled => String::new().into_response(),
         VerifyStatus::Enabled { verified_domains } => {
+            let token = s.generate_csrf_token()?;
+            let html = index_html(&token);
             let csp = build_content_security_header(verified_domains);
-            ([(header::CONTENT_SECURITY_POLICY, csp)], Html(INDEX_HTML)).into_response()
+            let headers = [
+                (header::CONTENT_SECURITY_POLICY, csp),
+                (CsrfToken::header_name(), token),
+            ];
+            (headers, Html(html)).into_response()
         }
     })
 }
@@ -111,6 +129,48 @@ impl From<GetVerifyStatusError> for Response {
             }
             GetVerifyStatusError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CsrfToken {
+    exp: usize,
+}
+
+impl CsrfToken {
+    // Using const value instead of a fn produces this warning:
+    // https://rust-lang.github.io/rust-clippy/master/index.html#declare_interior_mutable_const
+    const fn header_name() -> HeaderName {
+        HeaderName::from_static("x-csrf-token")
+    }
+}
+
+impl<B> Server<B> {
+    fn generate_csrf_token(&self) -> Result<String, Response> {
+        use jsonwebtoken::{encode, get_current_timestamp, Header};
+
+        const TTL_SECS: usize = 60 * 60; // 1 hour
+
+        let claims = CsrfToken {
+            exp: get_current_timestamp() as usize + TTL_SECS,
+        };
+
+        encode(&Header::default(), &claims, &self.encoding_key)
+            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response())
+    }
+
+    fn validate_csrf_token(&self, headers: &HeaderMap<HeaderValue>) -> Result<(), StatusCode> {
+        use jsonwebtoken::{decode, Validation};
+
+        let try_validate = |headers: &HeaderMap<HeaderValue>| {
+            let token = headers.get(CsrfToken::header_name())?.to_str().ok()?;
+
+            decode::<CsrfToken>(token, &self.decoding_key, &Validation::default())
+                .map(drop)
+                .ok()
+        };
+
+        try_validate(headers).ok_or(StatusCode::FORBIDDEN)
     }
 }
 

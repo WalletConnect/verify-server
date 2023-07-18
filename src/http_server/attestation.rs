@@ -1,45 +1,50 @@
 use {
+    super::State,
     crate::Bouncer,
     axum::{
-        extract::{Json, Path, State as StateExtractor},
+        extract::{Json, Path},
         http::StatusCode,
         response::IntoResponse,
     },
-    hyper::header,
+    hyper::{header, HeaderMap},
     serde::{Deserialize, Serialize},
-    std::sync::Arc,
     tracing::instrument,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AttestationBody {
-    pub attestation_id: String,
-    pub origin: String,
+pub(super) struct Body {
+    attestation_id: String,
+    origin: String,
 }
 
-#[instrument(level = "debug", skip(app))]
-pub async fn get(
-    StateExtractor(app): StateExtractor<Arc<impl Bouncer>>,
+#[instrument(level = "debug", skip(s))]
+pub(super) async fn get(
+    s: State<impl Bouncer>,
     Path(attestation_id): Path<String>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    app.get_attestation(&attestation_id)
+    s.bouncer
+        .get_attestation(&attestation_id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)
-        .map(|origin| AttestationBody {
+        .map(|origin| Body {
             attestation_id,
             origin,
         })
         .map(|body| ([(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")], Json(body)))
 }
 
-#[instrument(level = "debug", skip(app))]
-pub async fn post(
-    StateExtractor(app): StateExtractor<Arc<impl Bouncer>>,
-    body: Json<AttestationBody>,
+#[instrument(level = "debug", skip(s))]
+pub(super) async fn post(
+    s: State<impl Bouncer>,
+    headers: HeaderMap,
+    body: Json<Body>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    app.set_attestation(&body.attestation_id, &body.origin)
+    s.validate_csrf_token(&headers)?;
+
+    s.bouncer
+        .set_attestation(&body.attestation_id, &body.origin)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
         .map(|_| (StatusCode::OK, "OK".to_string()))

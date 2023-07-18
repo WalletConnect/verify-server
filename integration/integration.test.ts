@@ -39,12 +39,12 @@ describe('verify', () => {
     const url = `${BASE_URL}/attestation`
 
     it('can set an attestation', async () => {
-      let resp: any = await http.get(`${url}/${TEST_PROJECT_ID}`)
-      let setCookie = resp.headers["set-cookie"]
+      let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
+      console.log(resp.headers)
       let csrfToken = resp.headers["x-csrf-token"]
 
       resp = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'}, {
-        headers: { "x-csrf-token": csrfToken, cookie: setCookie },
+        headers: { "x-csrf-token": csrfToken },
       })
       expect(resp.status).toBe(200)
       expect(resp.headers["access-control-allow-origin"]).toBe(undefined)
@@ -57,7 +57,26 @@ describe('verify', () => {
       expect(resp.data.origin).toBe('localhost')
       expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
+  
+    it('invalid CSRF token', async () => {
+        let csrfToken = 'aaaaaaaaaaaa'
+
+        let resp: any = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'}, {
+          headers: { "x-csrf-token": csrfToken },
+        })
+        expect(resp.status).toBe(403)
+    })
+
+    it('expired CSRF token', async () => {
+        let csrfToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2ODk2NjE2MTl9.PE9QkYso_axaWvwnAUDxth2nBQLNAA0pCDxc8WnfPR8'
+
+        let resp: any = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'}, {
+          headers: { "x-csrf-token": csrfToken },
+        })
+        expect(resp.status).toBe(403)
+    })
   })
+
   describe('Enclave', () => {
     const url = `${BASE_URL}`
 
@@ -107,7 +126,10 @@ describe('verify', () => {
     const url = `${BASE_URL}`
 
     it('get index.js', async () => {
-      let resp: any = await http.get(`${url}/index.js`)
+      let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
+      let csrfToken = resp.headers["x-csrf-token"]
+
+      resp = await http.get(`${url}/index.js?token=${csrfToken}`)
       expect(resp.status).toBe(200)
     })
   })

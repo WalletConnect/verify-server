@@ -1,11 +1,13 @@
-use axum::response::{Html, IntoResponse};
+use {
+    axum::{
+        extract::Query,
+        response::{Html, IntoResponse},
+    },
+    serde::Deserialize,
+};
 
-const INDEX_JS: &str = r#"
-const getCookie = (name) => {
-    const value = `${document.cookie}`
-    const parts = value.split(`${name}=`)
-    return parts.pop().split(';').shift()
-}
+const TEMPLATE: &str = r#"
+const csrfToken = '{token}';
 // event subscribed by Verify Enclave
 window.addEventListener("message", (event) => {
     const attestationId = event.data
@@ -17,17 +19,23 @@ window.addEventListener("message", (event) => {
         body: JSON.stringify({ attestationId, origin }),
         headers: new Headers({ 
             'content-type': 'application/json',
-            'x-csrf-token': getCookie('sid')
+            'x-csrf-token': csrfToken
         })
     })
 })
-// auto reload to refresh cookie
+// auto reload to refresh token
 window.addEventListener("load", async () => {
     setInterval(() => {
         window.location.reload()
     }, 60_000)
-})"#;
+})
+"#;
 
-pub async fn get() -> impl IntoResponse {
-    Html(INDEX_JS)
+#[derive(Deserialize)]
+pub(super) struct Params {
+    token: String,
+}
+
+pub(super) async fn get(query: Query<Params>) -> impl IntoResponse {
+    Html(TEMPLATE.replacen("{token}", &query.token, 1))
 }
