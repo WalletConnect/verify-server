@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.25.1 - 2023-07-18
+#### Bug Fixes
+- don't use cookies for CSRF protection (#43) - (6276d0b) - xDarksome
+- - -
+
 ## v0.25.0 - 2023-07-13
 #### Features
 - make Verify API opt-in & secure attestation with CSRF tokens (#42) - (022f45a) - xDarksome
