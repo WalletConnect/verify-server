@@ -1,6 +1,7 @@
 locals {
   app_name            = "verify"
   fqdn                = terraform.workspace == "prod" ? var.public_url : "${terraform.workspace}.${var.public_url}"
+  backup_fqdn         = replace(local.fqdn, ".com", ".org")
   latest_release_name = data.github_release.latest_release.name
   version             = coalesce(var.image_version, substr(local.latest_release_name, 1, length(local.latest_release_name)))
 }
@@ -27,6 +28,13 @@ module "dns" {
   source = "github.com/WalletConnect/terraform-modules.git//modules/dns"
 
   hosted_zone_name = var.public_url
+  fqdn             = local.fqdn
+}
+
+module "backup_dns" {
+  source = "github.com/WalletConnect/terraform-modules.git//modules/dns"
+
+  hosted_zone_name = replace(var.public_url, ".com", ".org")
   fqdn             = local.fqdn
 }
 
@@ -97,6 +105,9 @@ module "ecs" {
   public_subnets              = module.vpc.public_subnets
   region                      = var.region
   route53_zone_id             = module.dns.zone_id
+  backup_acm_certificate_arn  = module.backup_dns.certificate_arn
+  backup_fqdn                 = local.backup_fqdn
+  backup_route53_zone_id      = module.backup_dns.zone_id
   vpc_cidr                    = module.vpc.vpc_cidr_block
   vpc_id                      = module.vpc.vpc_id
   redis_url                   = module.redis.endpoint
