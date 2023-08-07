@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.26.0 - 2023-08-07
+#### Bug Fixes
+- **(ci)** Terraform CI not kicking off deploy - (d730f41) - Derek
+#### Features
+- expose on .org (#45) - (cdee926) - Derek
+- - -
+
 ## v0.25.1 - 2023-07-18
 #### Bug Fixes
 - don't use cookies for CSRF protection (#43) - (6276d0b) - xDarksome
