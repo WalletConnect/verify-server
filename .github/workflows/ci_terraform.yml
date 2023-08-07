@@ -89,3 +89,8 @@ jobs:
               body: output
             })
 
+  kick-off-cd:
+    needs: [plan]
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/cd.yml
+    secrets: inherit
