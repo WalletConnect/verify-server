@@ -216,6 +216,23 @@ resource "aws_route53_record" "dns_load_balancer" {
   }
 }
 
+resource "aws_route53_record" "backup_dns_load_balancer" {
+  zone_id = var.backup_route53_zone_id
+  name    = var.backup_fqdn
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.application_load_balancer.dns_name
+    zone_id                = aws_lb.application_load_balancer.zone_id
+    evaluate_target_health = true
+  }
+}
+
+resource "aws_lb_listener_certificate" "backup_cert" {
+  listener_arn    = aws_lb_listener.listener.arn
+  certificate_arn = var.backup_acm_certificate_arn
+}
+
 # IAM
 resource "aws_iam_role" "ecs_task_execution_role" {
   name               = "${var.app_name}-ecs-task-execution-role"
