@@ -180,10 +180,15 @@ resource "aws_lb_listener" "listener" {
   port              = "443"
   protocol          = "HTTPS"
   certificate_arn   = var.acm_certificate_arn
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.target_group.arn # Referencing our target group
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
