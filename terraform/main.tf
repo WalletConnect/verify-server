@@ -35,7 +35,7 @@ module "backup_dns" {
   source = "github.com/WalletConnect/terraform-modules.git//modules/dns"
 
   hosted_zone_name = replace(var.public_url, ".com", ".org")
-  fqdn             = local.fqdn
+  fqdn             = local.backup_fqdn
 }
 
 resource "aws_prometheus_workspace" "prometheus" {
