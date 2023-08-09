@@ -29,6 +29,9 @@ window.addEventListener("load", async () => {
         window.location.reload()
     }, 60_000)
 })
+
+// notify the SDK that the iframe is ready
+window.parent.postMessage("verify_ready")
 "#;
 
 #[derive(Deserialize)]
