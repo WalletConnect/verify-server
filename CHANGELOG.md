@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.27.0 - 2023-08-09
+#### Bug Fixes
+- **(ci)** Terraform CI not kicking off deploy - (7de0851) - Derek
+- **(ci)** ci kicking off on .github changes - (0788641) - Derek
+- cannot deploy cert - (4a48487) - Derek
+#### Features
+- sends message to parent page that verify has loaded (#46) - (d7ea55b) - Gancho Radkov
+- - -
+
 ## v0.26.0 - 2023-08-07
 #### Bug Fixes
 - **(ci)** Terraform CI not kicking off deploy - (d730f41) - Derek
