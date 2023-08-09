@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.27.1 - 2023-08-09
+#### Bug Fixes
+- adds target origin on post message (#47) - (600b7d2) - Gancho Radkov
+- - -
+
 ## v0.27.0 - 2023-08-09
 #### Bug Fixes
 - **(ci)** Terraform CI not kicking off deploy - (7de0851) - Derek
