@@ -113,5 +113,7 @@ module "ecs" {
   redis_url                   = module.redis.endpoint
   project_registry_url        = var.project_registry_url
   project_registry_auth_token = var.project_registry_auth_token
+  data_api_url                = var.data_api_url
+  data_api_auth_token         = var.data_api_auth_token
   secret                      = var.secret
 }

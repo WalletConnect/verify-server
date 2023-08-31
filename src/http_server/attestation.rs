@@ -1,6 +1,6 @@
 use {
     super::State,
-    crate::Bouncer,
+    crate::{Bouncer, IsScam},
     axum::{
         extract::{Json, Path},
         http::StatusCode,
@@ -16,6 +16,7 @@ use {
 pub(super) struct Body {
     attestation_id: String,
     origin: String,
+    is_scam: Option<bool>,
 }
 
 #[instrument(level = "debug", skip(s))]
@@ -28,9 +29,14 @@ pub(super) async fn get(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)
-        .map(|origin| Body {
+        .map(|a| Body {
             attestation_id,
-            origin,
+            origin: a.origin,
+            is_scam: match a.is_scam {
+                IsScam::Yes => Some(true),
+                IsScam::No => Some(false),
+                IsScam::Unknown => None,
+            },
         })
         .map(|body| ([(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")], Json(body)))
 }

@@ -6,6 +6,7 @@ use {
     },
     bouncer::{
         project_registry::{self, CachedExt as _},
+        scam_guard,
         util::redis,
     },
     build_info::VersionControl,
@@ -36,6 +37,10 @@ pub struct Configuration {
     pub project_registry_url: String,
     pub project_registry_auth_token: String,
     pub project_registry_cache_url: String,
+
+    pub data_api_url: String,
+    pub data_api_token: String,
+    pub scam_guard_cache_url: String,
 
     pub secret: String,
 }
@@ -85,7 +90,13 @@ async fn main() -> Result<(), anyhow::Error> {
     .context("Failed to initialize ProjectRegistry")?
     .cached(project_registry_cache);
 
-    let app = bouncer::new((attestation_store, project_registry));
+    let scam_guard_cache = redis::new("scam_guard_cache", config.scam_guard_cache_url.clone())
+        .context("Failed to initialize scam_guard::Cache")?;
+
+    let scam_guard = scam_guard::data_api::new(config.data_api_url, config.data_api_token)
+        .cached(scam_guard_cache);
+
+    let app = bouncer::new((attestation_store, project_registry, scam_guard));
 
     bouncer::http_server::run(
         app,
