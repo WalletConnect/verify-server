@@ -19,6 +19,7 @@ concurrency:
 
 env:
   TF_VAR_project_registry_auth_token: ${{ secrets.PROJECT_REGISTRY_AUTH_TOKEN }}
+  TF_VAR_data_api_auth_token: ${{ secrets.DATA_API_AUTH_TOKEN }}
   TF_VAR_secret: ${{ secrets.SECRET }}
 
 jobs:
