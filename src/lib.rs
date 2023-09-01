@@ -3,6 +3,7 @@ pub use {
     async_trait::async_trait,
     attestation_store::AttestationStore,
     project_registry::ProjectRegistry,
+    scam_guard::ScamGuard,
 };
 use {
     arrayvec::ArrayString,
@@ -13,8 +14,10 @@ use {
 };
 
 pub mod attestation_store;
+pub mod cache;
 pub mod http_server;
 pub mod project_registry;
+pub mod scam_guard;
 pub mod util;
 
 #[async_trait]
@@ -25,7 +28,7 @@ pub trait Bouncer: Send + Sync + 'static {
     ) -> Result<VerifyStatus, GetVerifyStatusError>;
 
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<(), Error>;
-    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error>;
+    async fn get_attestation(&self, id: &str) -> Result<Option<Attestation>, Error>;
 }
 
 /// Status of the Verify API of some project.
@@ -80,6 +83,23 @@ pub struct ProjectData {
     pub verified_domains: Vec<Domain>,
 }
 
+pub struct Attestation {
+    /// The origin domain of this attestation.
+    pub origin: String,
+
+    /// Indicator of whether the [`Attestation::origin`] domain represents a
+    /// scam dApp or not.
+    pub is_scam: IsScam,
+}
+
+/// Indicator of whether a domain represents a scam dApp or not.
+#[derive(Clone, Copy, Deserialize, Serialize)]
+pub enum IsScam {
+    Yes,
+    No,
+    Unknown,
+}
+
 struct App<I> {
     infra: I,
 }
@@ -120,11 +140,25 @@ impl<I: Infra> Bouncer for App<I> {
     }
 
     #[instrument(level = "debug", skip(self))]
-    async fn get_attestation(&self, id: &str) -> Result<Option<String>, Error> {
-        self.attestation_store()
+    async fn get_attestation(&self, id: &str) -> Result<Option<Attestation>, Error> {
+        let origin = self
+            .attestation_store()
             .get_attestation(id)
             .await
-            .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))
+            .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))?;
+
+        let Some(origin) = origin else {
+            return Ok(None);
+        };
+
+        let is_scam = self
+            .scam_guard()
+            .is_scam(&origin)
+            .await
+            .map_err(|e| error!("ScamGuard::is_scam: {e:?}"))
+            .unwrap_or(IsScam::Unknown);
+
+        Ok(Some(Attestation { origin, is_scam }))
     }
 }
 
@@ -132,18 +166,22 @@ impl<I: Infra> Bouncer for App<I> {
 pub trait Infra: Send + Sync + 'static {
     type AttestationStore: AttestationStore;
     type ProjectRegistry: ProjectRegistry;
+    type ScamGuard: ScamGuard;
 
     fn attestation_store(&self) -> &Self::AttestationStore;
     fn project_registry(&self) -> &Self::ProjectRegistry;
+    fn scam_guard(&self) -> &Self::ScamGuard;
 }
 
-impl<A, P> Infra for (A, P)
+impl<A, P, S> Infra for (A, P, S)
 where
     A: AttestationStore,
     P: ProjectRegistry,
+    S: ScamGuard,
 {
     type AttestationStore = A;
     type ProjectRegistry = P;
+    type ScamGuard = S;
 
     fn attestation_store(&self) -> &Self::AttestationStore {
         &self.0
@@ -151,6 +189,10 @@ where
 
     fn project_registry(&self) -> &Self::ProjectRegistry {
         &self.1
+    }
+
+    fn scam_guard(&self) -> &Self::ScamGuard {
+        &self.2
     }
 }
 
@@ -161,5 +203,9 @@ impl<I: Infra> App<I> {
 
     pub fn project_registry(&self) -> &I::ProjectRegistry {
         self.infra.project_registry()
+    }
+
+    pub fn scam_guard(&self) -> &I::ScamGuard {
+        self.infra.scam_guard()
     }
 }

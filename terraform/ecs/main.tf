@@ -66,6 +66,9 @@ resource "aws_ecs_task_definition" "app_task_definition" {
         { name = "PROJECT_REGISTRY_CACHE_URL", value = "redis://${var.redis_url}/1" },
         { name = "PROJECT_REGISTRY_URL", value = var.project_registry_url },
         { name = "PROJECT_REGISTRY_AUTH_TOKEN", value = var.project_registry_auth_token },
+        { name = "SCAM_GUARD_CACHE_URL", value = "redis://${var.redis_url}/2" },
+        { name = "DATA_API_URL", value = var.data_api_url },
+        { name = "DATA_API_AUTH_TOKEN", value = var.data_api_auth_token },
         { name = "SECRET", value = var.secret },
       ],
       dependsOn = [

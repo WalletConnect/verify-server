@@ -7,6 +7,15 @@ variable "project_registry_auth_token" {
   sensitive = true
 }
 
+variable "data_api_url" {
+  type = string
+}
+
+variable "data_api_auth_token" {
+  type      = string
+  sensitive = true
+}
+
 variable "region" {
   type    = string
   default = "eu-central-1"

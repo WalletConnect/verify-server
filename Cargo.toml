@@ -16,6 +16,7 @@ jsonwebtoken = "8"
 tower = "0.4"
 tower-http = { version = "0.3", features = ["cors", "trace"] }
 hyper = "0.14"
+reqwest = { version = "0.11", features = ["json"] }
 
 # Infra
 deadpool-redis = "0.10"
@@ -43,6 +44,5 @@ futures = "0.3"
 log = "0.4"
 thiserror = "1.0"
 tap = "1.0"
-
 [build-dependencies]
 build-info-build = ">=0.0.30"

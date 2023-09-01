@@ -38,12 +38,11 @@ describe('verify', () => {
   describe('Attestation', () => {
     const url = `${BASE_URL}/attestation`
 
-    it('can set an attestation', async () => {
+    it('non-scam origin', async () => {
       let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
-      console.log(resp.headers)
       let csrfToken = resp.headers["x-csrf-token"]
 
-      resp = await http.post(`${url}`, {'origin': 'localhost', 'attestationId': 'some'}, {
+      resp = await http.post(`${url}`, {'origin': 'http://localhost', 'attestationId': 'some'}, {
         headers: { "x-csrf-token": csrfToken },
       })
       expect(resp.status).toBe(200)
@@ -54,8 +53,35 @@ describe('verify', () => {
 
       resp = await http.get(`${url}/some`)
       expect(resp.status).toBe(200)
-      expect(resp.data.origin).toBe('localhost')
+      expect(resp.data.origin).toBe('http://localhost')
+      expect(resp.data.isScam).toBe(false)
       expect(resp.headers["access-control-allow-origin"]).toBe("*")
+    })
+    
+    it('scam origin', async () => {
+      let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
+      let csrfToken = resp.headers["x-csrf-token"]
+
+      resp = await http.post(`${url}`, {'origin': 'https://evilpepecoin.com', 'attestationId': 'evil'}, {
+        headers: { "x-csrf-token": csrfToken },
+      })
+      resp = await http.options(`${url}/evil`);
+      resp = await http.get(`${url}/evil`)
+
+      expect(resp.data.isScam).toBe(true)
+    })
+
+    it('scam: unknown', async () => {
+      let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
+      let csrfToken = resp.headers["x-csrf-token"]
+
+      resp = await http.post(`${url}`, {'origin': 'https://my-dapp.io', 'attestationId': 'tbd'}, {
+        headers: { "x-csrf-token": csrfToken },
+      })
+      resp = await http.options(`${url}/tbd`);
+      resp = await http.get(`${url}/tbd`)
+
+      expect(resp.data.isScam).toBe(null)
     })
   
     it('invalid CSRF token', async () => {
