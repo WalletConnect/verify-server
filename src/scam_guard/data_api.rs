@@ -3,8 +3,10 @@ use {
     crate::IsScam,
     anyhow::Context as _,
     async_trait::async_trait,
+    reqwest::Url,
     serde::Deserialize,
     std::sync::Arc,
+    tracing::warn,
 };
 
 const API_KEY_HEADER: &str = "x-api-key";
@@ -32,8 +34,14 @@ struct ResponseBody {
 
 #[async_trait]
 impl ScamGuard for Adapter {
-    async fn is_scam(&self, domain: &str) -> Result<IsScam> {
-        let url = format!("{}/domain?domain={domain}", self.url.as_ref());
+    async fn is_scam(&self, origin: &str) -> Result<IsScam> {
+        let url = Url::parse(origin).ok();
+        let Some(host) = url.as_ref().and_then(|url| url.host_str()) else {
+            warn!("Origin({origin}) isn't a valid URL, skipping the scam check");
+            return Ok(IsScam::Unknown);
+        };
+
+        let url = format!("{}/domain?domain={host}", self.url.as_ref());
         let req = self
             .client
             .get(url)

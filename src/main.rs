@@ -39,7 +39,7 @@ pub struct Configuration {
     pub project_registry_cache_url: String,
 
     pub data_api_url: String,
-    pub data_api_token: String,
+    pub data_api_auth_token: String,
     pub scam_guard_cache_url: String,
 
     pub secret: String,
@@ -93,7 +93,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let scam_guard_cache = redis::new("scam_guard_cache", config.scam_guard_cache_url.clone())
         .context("Failed to initialize scam_guard::Cache")?;
 
-    let scam_guard = scam_guard::data_api::new(config.data_api_url, config.data_api_token)
+    let scam_guard = scam_guard::data_api::new(config.data_api_url, config.data_api_auth_token)
         .cached(scam_guard_cache);
 
     let app = bouncer::new((attestation_store, project_registry, scam_guard));

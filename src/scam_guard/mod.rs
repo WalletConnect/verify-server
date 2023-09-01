@@ -47,13 +47,12 @@ where
         let data = self.inner.is_scam(domain).await?;
 
         let cache = self.cache.clone();
-        let data_clone = data.clone();
         let domain = domain.to_string();
 
         // Do not block on cache write.
         tokio::spawn(async move {
             let _ = cache
-                .set(&domain, &data_clone)
+                .set(&domain, &data)
                 .await
                 .tap_err(|e| error!("set: {e:?}"))
                 .tap_err(|_| counter!("scam_guard_cache_write_errors", 1))
