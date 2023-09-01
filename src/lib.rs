@@ -93,7 +93,7 @@ pub struct Attestation {
 }
 
 /// Indicator of whether a domain represents a scam dApp or not.
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Serialize, Eq, PartialEq)]
 pub enum IsScam {
     Yes,
     No,
@@ -147,7 +147,7 @@ impl<I: Infra> Bouncer for App<I> {
             .await
             .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))?;
 
-        let Some(origin) = origin else {
+        let Some(mut origin) = origin else {
             return Ok(None);
         };
 
@@ -157,6 +157,12 @@ impl<I: Infra> Bouncer for App<I> {
             .await
             .map_err(|e| error!("ScamGuard::is_scam: {e:?}"))
             .unwrap_or(IsScam::Unknown);
+
+        // TODO: Remove
+        // Temporary hack, because SDKs do not have UI for scam checking yet.
+        if is_scam == IsScam::Yes {
+            origin = "https://evil.walletconnect.com".to_string();
+        }
 
         Ok(Some(Attestation { origin, is_scam }))
     }
