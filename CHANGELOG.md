@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.28.2 - 2023-09-01
+#### Bug Fixes
+- make scam use-case look like malicious - (667bbf1) - Darksome
+- - -
+
 ## v0.28.1 - 2023-09-01
 #### Bug Fixes
 - data_api_auth_token on cd - (c3e2162) - Darksome
