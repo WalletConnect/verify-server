@@ -143,6 +143,12 @@ impl CsrfToken {
     const fn header_name() -> HeaderName {
         HeaderName::from_static("x-csrf-token")
     }
+
+    /// Validates the format of the token without checking either signature or
+    /// claims.
+    fn validate_format(s: &str) -> bool {
+        jsonwebtoken::decode_header(s).is_ok()
+    }
 }
 
 impl<B> Server<B> {

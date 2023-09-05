@@ -1,8 +1,10 @@
 use {
+    super::CsrfToken,
     axum::{
         extract::Query,
         response::{Html, IntoResponse},
     },
+    hyper::StatusCode,
     serde::Deserialize,
 };
 
@@ -39,6 +41,10 @@ pub(super) struct Params {
     token: String,
 }
 
-pub(super) async fn get(query: Query<Params>) -> impl IntoResponse {
-    Html(TEMPLATE.replacen("{token}", &query.token, 1))
+pub(super) async fn get(query: Query<Params>) -> Result<impl IntoResponse, StatusCode> {
+    if !CsrfToken::validate_format(&query.token) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    Ok(Html(TEMPLATE.replacen("{token}", &query.token, 1)))
 }
