@@ -158,5 +158,10 @@ describe('verify', () => {
       resp = await http.get(`${url}/index.js?token=${csrfToken}`)
       expect(resp.status).toBe(200)
     })
+
+    it('doesn\'t allow invalid `token` parameters', async () => {
+      let resp = await http.get(`${url}/index.js?token=<img src onerror=alert(document.domain)>`)
+      expect(resp.status).toBe(400)
+    })
   })
 })
