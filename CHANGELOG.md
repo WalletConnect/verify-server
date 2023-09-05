@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.28.3 - 2023-09-05
+#### Bug Fixes
+- sanitize /index.js?token parameter (#49) - (a40075c) - xDarksome
+- - -
+
 ## v0.28.2 - 2023-09-01
 #### Bug Fixes
 - make scam use-case look like malicious - (667bbf1) - Darksome
