@@ -1,6 +1,7 @@
 use {
     crate::{Bouncer, Domain, GetVerifyStatusError, ProjectId, VerifyStatus},
     axum::{
+        body::HttpBody,
         extract::Path,
         response::{Html, IntoResponse, Response},
         routing::{get, post},
@@ -20,6 +21,10 @@ use {
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        MaxMindResolver,
+    },
 };
 
 mod attestation;
@@ -39,9 +44,11 @@ pub async fn run(
     app: impl Bouncer,
     port: u16,
     secret: &[u8],
+    blocked_countries: Vec<String>,
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     metrics_port: u16,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
+    geoip_resolver: Option<Arc<MaxMindResolver>>,
     shutdown: impl Future,
 ) {
     let shutdown = shutdown
@@ -53,7 +60,7 @@ pub async fn run(
         .allow_methods([Method::OPTIONS, Method::GET]);
 
     let metrics_layer = MetricLayerBuilder::new()
-        // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
+        // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch
         // of junk like "/+CSCOE+/logon.html".
         .with_endpoint_label_type(EndpointLabel::MatchedPathWithFallbackFn(|_| String::new()))
         .build();
@@ -64,7 +71,7 @@ pub async fn run(
         decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
     };
 
-    let server = Router::new()
+    let server = new_geoblocking_router(geoip_resolver, blocked_countries)
         .route("/attestation/:attestation_id", get(attestation::get))
         .layer(cors_layer)
         .route("/health", get(health::get(health_provider)))
@@ -89,6 +96,25 @@ pub async fn run(
         server.map(|_| info!("Server terminated")),
         metrics_server.map(|_| info!("Metrics server terminated"))
     );
+}
+
+fn new_geoblocking_router<S, B>(
+    geoip_resolver: Option<Arc<MaxMindResolver>>,
+    blocked_countries: Vec<String>,
+) -> Router<S, B>
+where
+    S: Clone + Send + Sync + 'static,
+    B: HttpBody + Send + 'static,
+{
+    if let Some(resolver) = geoip_resolver {
+        Router::new().layer(GeoBlockLayer::new(
+            resolver.clone(),
+            blocked_countries.clone(),
+            BlockingPolicy::AllowAll,
+        ))
+    } else {
+        Router::new()
+    }
 }
 
 fn index_html(token: &str) -> String {

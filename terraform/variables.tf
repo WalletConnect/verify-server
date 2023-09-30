@@ -43,3 +43,12 @@ variable "image_version" {
   type    = string
   default = ""
 }
+
+#---------------------------------------
+# GeoIP
+
+variable "geoip_db_key" {
+  description = "The name to the GeoIP database"
+  type        = string
+  default     = "GeoLite2-City.mmdb"
+}
