@@ -20,6 +20,10 @@ use {
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
+        MaxMindResolver,
+    },
 };
 
 mod attestation;
@@ -39,9 +43,11 @@ pub async fn run(
     app: impl Bouncer,
     port: u16,
     secret: &[u8],
+    blocked_countries: Vec<String>,
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     metrics_port: u16,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
+    geoip_resolver: Option<Arc<MaxMindResolver>>,
     shutdown: impl Future,
 ) {
     let shutdown = shutdown
@@ -53,7 +59,7 @@ pub async fn run(
         .allow_methods([Method::OPTIONS, Method::GET]);
 
     let metrics_layer = MetricLayerBuilder::new()
-        // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch 
+        // We overwrite enexpected enpoint paths here, otherwise this label will collect a bunch
         // of junk like "/+CSCOE+/logon.html".
         .with_endpoint_label_type(EndpointLabel::MatchedPathWithFallbackFn(|_| String::new()))
         .build();
@@ -64,7 +70,7 @@ pub async fn run(
         decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
     };
 
-    let server = Router::new()
+    let server: Router = Router::new()
         .route("/attestation/:attestation_id", get(attestation::get))
         .layer(cors_layer)
         .route("/health", get(health::get(health_provider)))
@@ -72,7 +78,17 @@ pub async fn run(
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
         .layer(metrics_layer)
-        .with_state(Arc::new(state))
+        .with_state(Arc::new(state));
+    let server = if let Some(resolver) = geoip_resolver.clone() {
+        server.layer(GeoBlockLayer::new(
+            resolver,
+            blocked_countries.clone(),
+            GeoBlockingPolicy::AllowAll,
+        ))
+    } else {
+        server
+    };
+    let server = server
         .into_make_service()
         .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))

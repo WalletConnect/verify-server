@@ -1,5 +1,7 @@
 use {
     anyhow::Context as _,
+    aws_config::meta::region::RegionProviderChain,
+    aws_sdk_s3::{config::Region, Client as S3Client},
     axum_prometheus::{
         metrics_exporter_prometheus::{Matcher as MetricMatcher, PrometheusBuilder},
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
@@ -12,9 +14,14 @@ use {
     build_info::VersionControl,
     futures::{future::select, FutureExt},
     serde::{Deserialize, Deserializer},
-    std::{future::Future, str::FromStr},
+    std::{future::Future, str::FromStr, sync::Arc},
+    tap::TapFallible,
     tokio::signal::unix::{signal, SignalKind},
     tracing::info,
+    wc::geoip::{
+        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        MaxMindResolver,
+    },
 };
 
 #[derive(Deserialize, Debug, Clone)]
@@ -43,6 +50,13 @@ pub struct Configuration {
     pub scam_guard_cache_url: String,
 
     pub secret: String,
+
+    pub s3_endpoint: Option<String>,
+
+    pub geoip_db_bucket: Option<String>,
+    pub geoip_db_key: Option<String>,
+
+    pub blocked_countries: Vec<String>,
 }
 
 build_info::build_info!(fn build_info);
@@ -61,6 +75,9 @@ async fn main() -> Result<(), anyhow::Error> {
             .event_format(tracing_subscriber::fmt::format::json())
             .init();
     }
+
+    let s3_client = get_s3_client(&config).await;
+    let geoip_resolver = get_geoip_resolver(&config, &s3_client).await;
 
     // By default `axum_prometheus` exposes http latency as a Summary, which
     // provides quite limited querying functionaliy. `set_buckets_for_metrics`
@@ -102,9 +119,11 @@ async fn main() -> Result<(), anyhow::Error> {
         app,
         config.port,
         config.secret.as_bytes(),
+        config.blocked_countries,
         move || prometheus.render(),
         config.prometheus_port,
         health_provider,
+        geoip_resolver,
         signals,
     )
     .await;
@@ -166,4 +185,43 @@ where
     let s = String::deserialize(de)?;
     tracing::Level::from_str(&s)
         .map_err(|e| D::Error::custom(format!("Invalid tracing::Level: {e}")))
+}
+
+async fn get_s3_client(config: &Configuration) -> S3Client {
+    let region_provider = RegionProviderChain::first_try(Region::new("eu-central-1"));
+    let shared_config = aws_config::from_env().region(region_provider).load().await;
+
+    let aws_config = match &config.s3_endpoint {
+        Some(s3_endpoint) => {
+            info!(%s3_endpoint, "initializing analytics with custom s3 endpoint");
+
+            aws_sdk_s3::config::Builder::from(&shared_config)
+                .endpoint_url(s3_endpoint)
+                .build()
+        }
+        _ => aws_sdk_s3::config::Builder::from(&shared_config).build(),
+    };
+
+    S3Client::from_conf(aws_config)
+}
+
+async fn get_geoip_resolver(
+    config: &Configuration,
+    s3_client: &S3Client,
+) -> Option<Arc<MaxMindResolver>> {
+    match (&config.geoip_db_bucket, &config.geoip_db_key) {
+        (Some(bucket), Some(key)) => {
+            info!(%bucket, %key, "initializing geoip database from aws s3");
+
+            MaxMindResolver::from_aws_s3(s3_client, bucket, key)
+                .await
+                .tap_err(|err| info!(?err, "failed to load geoip resolver"))
+                .ok()
+                .map(Arc::new)
+        }
+        _ => {
+            info!("analytics geoip lookup is disabled");
+            None
+        }
+    }
 }
