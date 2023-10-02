@@ -1,7 +1,6 @@
 use {
     crate::{Bouncer, Domain, GetVerifyStatusError, ProjectId, VerifyStatus},
     axum::{
-        body::HttpBody,
         extract::Path,
         response::{Html, IntoResponse, Response},
         routing::{get, post},
