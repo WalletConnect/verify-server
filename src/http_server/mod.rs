@@ -71,7 +71,7 @@ pub async fn run(
         decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
     };
 
-    let server = new_geoblocking_router(geoip_resolver, blocked_countries)
+    let server: Router = Router::new()
         .route("/attestation/:attestation_id", get(attestation::get))
         .layer(cors_layer)
         .route("/health", get(health::get(health_provider)))
@@ -79,7 +79,17 @@ pub async fn run(
         .route("/index.js", get(index_js::get))
         .route("/:project_id", get(root))
         .layer(metrics_layer)
-        .with_state(Arc::new(state))
+        .with_state(Arc::new(state));
+    let server = if let Some(resolver) = geoip_resolver.clone() {
+        server.layer(GeoBlockLayer::new(
+            resolver,
+            blocked_countries.clone(),
+            BlockingPolicy::AllowAll,
+        ))
+    } else {
+        server
+    };
+    let server = server
         .into_make_service()
         .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))
@@ -96,25 +106,6 @@ pub async fn run(
         server.map(|_| info!("Server terminated")),
         metrics_server.map(|_| info!("Metrics server terminated"))
     );
-}
-
-fn new_geoblocking_router<S, B>(
-    geoip_resolver: Option<Arc<MaxMindResolver>>,
-    blocked_countries: Vec<String>,
-) -> Router<S, B>
-where
-    S: Clone + Send + Sync + 'static,
-    B: HttpBody + Send + 'static,
-{
-    if let Some(resolver) = geoip_resolver {
-        Router::new().layer(GeoBlockLayer::new(
-            resolver.clone(),
-            blocked_countries.clone(),
-            BlockingPolicy::AllowAll,
-        ))
-    } else {
-        Router::new()
-    }
 }
 
 fn index_html(token: &str) -> String {
