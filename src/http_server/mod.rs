@@ -22,7 +22,7 @@ use {
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
     wc::geoip::{
-        block::{middleware::GeoBlockLayer, BlockingPolicy},
+        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
         MaxMindResolver,
     },
 };
@@ -84,7 +84,7 @@ pub async fn run(
         server.layer(GeoBlockLayer::new(
             resolver,
             blocked_countries.clone(),
-            BlockingPolicy::AllowAll,
+            GeoBlockingPolicy::AllowAll,
         ))
     } else {
         server
