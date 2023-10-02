@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.29.0 - 2023-10-02
+#### Features
+- geo-blocking (#51) - (e942c90) - Xavier Basty
+- - -
+
 ## v0.28.3 - 2023-09-05
 #### Bug Fixes
 - sanitize /index.js?token parameter (#49) - (a40075c) - xDarksome
