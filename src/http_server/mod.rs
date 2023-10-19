@@ -33,8 +33,21 @@ mod metrics;
 
 struct Server<B> {
     bouncer: B,
+    token_manager: TokenManager,
+}
+
+struct TokenManager {
     encoding_key: jsonwebtoken::EncodingKey,
     decoding_key: jsonwebtoken::DecodingKey,
+}
+
+impl TokenManager {
+    fn new(secret: &[u8]) -> Self {
+        Self {
+            encoding_key: jsonwebtoken::EncodingKey::from_secret(secret),
+            decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
+        }
+    }
 }
 
 type State<B> = axum::extract::State<Arc<Server<B>>>;
@@ -66,8 +79,7 @@ pub async fn run(
 
     let state = Server {
         bouncer: app,
-        encoding_key: jsonwebtoken::EncodingKey::from_secret(secret),
-        decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
+        token_manager: TokenManager::new(secret),
     };
 
     let server: Router = Router::new()
@@ -125,7 +137,7 @@ async fn root(
     Ok(match s.bouncer.get_verify_status(project_id).await? {
         VerifyStatus::Disabled => String::new().into_response(),
         VerifyStatus::Enabled { verified_domains } => {
-            let token = s.generate_csrf_token()?;
+            let token = s.token_manager.generate_csrf_token()?;
             let html = index_html(&token);
             let csp = build_content_security_header(verified_domains);
             let headers = [
@@ -163,11 +175,12 @@ impl CsrfToken {
     /// Validates the format of the token without checking either signature or
     /// claims.
     fn validate_format(s: &str) -> bool {
-        jsonwebtoken::decode_header(s).is_ok()
+        s.chars()
+            .all(|c| c.is_ascii_alphanumeric() | matches!(c, '.' | '-' | '_'))
     }
 }
 
-impl<B> Server<B> {
+impl TokenManager {
     fn generate_csrf_token(&self) -> Result<String, Response> {
         use jsonwebtoken::{encode, get_current_timestamp, Header};
 
@@ -232,4 +245,19 @@ fn test_build_content_security_header() {
                          https://*.vercel.app https://vercel.app \
                          http://*.localhost http://localhost",
     );
+}
+
+#[test]
+fn generated_csrf_tokens_are_valid() {
+    let tm = TokenManager::new(&[]);
+    let token = tm.generate_csrf_token().unwrap();
+    assert!(CsrfToken::validate_format(&token))
+}
+
+#[test]
+fn csrf_validation_checks_jwt_header_and_payload() {
+    let valid_header_invalid_payload =
+        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.<svg/onload=alert(document.domain)>";
+
+    assert!(!CsrfToken::validate_format(&valid_header_invalid_payload))
 }

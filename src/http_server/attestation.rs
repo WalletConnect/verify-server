@@ -47,7 +47,7 @@ pub(super) async fn post(
     headers: HeaderMap,
     body: Json<Body>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    s.validate_csrf_token(&headers)?;
+    s.token_manager.validate_csrf_token(&headers)?;
 
     s.bouncer
         .set_attestation(&body.attestation_id, &body.origin)

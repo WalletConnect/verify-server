@@ -160,7 +160,7 @@ describe('verify', () => {
     })
 
     it('doesn\'t allow invalid `token` parameters', async () => {
-      let resp = await http.get(`${url}/index.js?token=<img src onerror=alert(document.domain)>`)
+      let resp = await http.get(`${url}/index.js?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.<img src onerror=alert(document.domain)>`)
       expect(resp.status).toBe(400)
     })
   })
