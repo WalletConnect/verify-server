@@ -18,10 +18,7 @@ use {
     tap::TapFallible,
     tokio::signal::unix::{signal, SignalKind},
     tracing::info,
-    wc::geoip::{
-        block::{middleware::GeoBlockLayer, BlockingPolicy},
-        MaxMindResolver,
-    },
+    wc::geoip::MaxMindResolver,
 };
 
 #[derive(Deserialize, Debug, Clone)]
