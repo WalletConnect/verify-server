@@ -42,7 +42,7 @@ describe('verify', () => {
       let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
       let csrfToken = resp.headers["x-csrf-token"]
 
-      resp = await http.post(`${url}`, {'origin': 'http://localhost', 'attestationId': 'some'}, {
+      resp = await http.post(`${url}`, {'origin': 'http://app.uniswap.org', 'attestationId': 'some'}, {
         headers: { "x-csrf-token": csrfToken },
       })
       expect(resp.status).toBe(200)
@@ -53,7 +53,7 @@ describe('verify', () => {
 
       resp = await http.get(`${url}/some`)
       expect(resp.status).toBe(200)
-      expect(resp.data.origin).toBe('http://localhost')
+      expect(resp.data.origin).toBe('http://app.uniswap.org')
       expect(resp.data.isScam).toBe(false)
       expect(resp.headers["access-control-allow-origin"]).toBe("*")
     })
