@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.30.0 - 2023-10-20
+#### Features
+- update non-scam domain - (994406d) - Derek
+- - -
+
 ## v0.29.1 - 2023-10-19
 #### Bug Fixes
 - CsrfToken::validate_format checking only JWT header (#52) - (ec2ec56) - xDarksome
