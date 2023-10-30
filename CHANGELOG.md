@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.31.0 - 2023-10-30
+#### Features
+- juice up prod to 2 CPU's (#53) - (6ee1e88) - xDarksome
+- - -
+
 ## v0.30.0 - 2023-10-20
 #### Features
 - update non-scam domain - (994406d) - Derek
