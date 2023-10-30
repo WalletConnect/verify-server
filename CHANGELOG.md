@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.31.1 - 2023-10-30
+#### Bug Fixes
+- update test scam domain - (83aee99) - Darksome
+- - -
+
 ## v0.31.0 - 2023-10-30
 #### Features
 - juice up prod to 2 CPU's (#53) - (6ee1e88) - xDarksome
