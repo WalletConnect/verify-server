@@ -62,7 +62,7 @@ describe('verify', () => {
       let resp: any = await http.get(`${BASE_URL}/${TEST_PROJECT_ID}`)
       let csrfToken = resp.headers["x-csrf-token"]
 
-      resp = await http.post(`${url}`, {'origin': 'https://evilpepecoin.com', 'attestationId': 'evil'}, {
+      resp = await http.post(`${url}`, {'origin': 'https://invite-celestia.com', 'attestationId': 'evil'}, {
         headers: { "x-csrf-token": csrfToken },
       })
       resp = await http.options(`${url}/evil`);
