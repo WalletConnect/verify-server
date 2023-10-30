@@ -1,3 +1,11 @@
+variable "cpu" {
+  type = number
+}
+
+variable "memory" {
+  type = number
+}
+
 variable "project_registry_url" {
   type = string
 }

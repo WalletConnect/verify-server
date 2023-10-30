@@ -99,9 +99,9 @@ module "ecs" {
   prometheus_endpoint         = aws_prometheus_workspace.prometheus.prometheus_endpoint
   image                       = "${data.aws_ecr_repository.repository.repository_url}:${local.version}"
   acm_certificate_arn         = module.dns.certificate_arn
-  cpu                         = 512
+  cpu                         = var.cpu
   fqdn                        = local.fqdn
-  memory                      = 1024
+  memory                      = var.memory
   private_subnets             = module.vpc.private_subnets
   public_subnets              = module.vpc.public_subnets
   region                      = var.region
