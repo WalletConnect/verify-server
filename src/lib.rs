@@ -147,7 +147,7 @@ impl<I: Infra> Bouncer for App<I> {
             .await
             .tap_err(|e| error!("AttestationStore::get_attestation: {e:?}"))?;
 
-        let Some(mut origin) = origin else {
+        let Some(origin) = origin else {
             return Ok(None);
         };
 
