@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.32.0 - 2023-11-27
+#### Features
+- remove domain override for scam apps (#56) - (66d1ce4) - Derek
+- Create LICENSE - (a56827c) - Derek
+#### Miscellaneous Chores
+- remove linked issues check (#54) - (9aa1a9a) - Xavier Basty
+- - -
+
 ## v0.31.1 - 2023-10-30
 #### Bug Fixes
 - update test scam domain - (83aee99) - Darksome
