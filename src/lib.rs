@@ -158,12 +158,6 @@ impl<I: Infra> Bouncer for App<I> {
             .map_err(|e| error!("ScamGuard::is_scam: {e:?}"))
             .unwrap_or(IsScam::Unknown);
 
-        // TODO: Remove
-        // Temporary hack, because SDKs do not have UI for scam checking yet.
-        if is_scam == IsScam::Yes {
-            origin = "https://evil.walletconnect.com".to_string();
-        }
-
         Ok(Some(Attestation { origin, is_scam }))
     }
 }
