@@ -18,7 +18,7 @@ where
     s3_writer: Analytics<Record>,
 }
 
-pub async fn requests<Record>(client: Client, bucket_name: String) -> Result<Adapter<Record>>
+pub async fn requests_dir<Record>(client: Client, bucket_name: String) -> Result<Adapter<Record>>
 where
     Record: Send + Sync + 'static,
     [Record]: RecordWriter<Record>,

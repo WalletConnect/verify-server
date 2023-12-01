@@ -121,7 +121,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .cached(scam_guard_cache);
 
     let event_sink = if let Some(bucket) = config.data_lake_bucket {
-        Some(event_sink::s3::requests(s3_client, bucket).await?)
+        Some(event_sink::s3::requests_dir(s3_client, bucket).await?)
     } else {
         tracing::info!("data_lake_bucket is not specified, analytics are going to be disabled");
         None

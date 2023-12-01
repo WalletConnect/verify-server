@@ -80,7 +80,7 @@ resource "aws_ecs_task_definition" "app_task_definition" {
         { "name" = "GEOIP_DB_BUCKET", "value" = var.geoip_db_bucket_name },
         { "name" = "GEOIP_DB_KEY", "value" = var.geoip_db_key },
 
-        { "name" = "DATA_LAKE_BUCKET_NAME", "value" = var.data_lake_bucket_name },
+        { "name" = "DATA_LAKE_BUCKET", "value" = var.data_lake_bucket_name },
 
         { "name" = "BLOCKED_COUNTRIES", "value" = "KP,IR,CU,SY" },
       ],
