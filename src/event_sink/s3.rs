@@ -18,18 +18,14 @@ where
     s3_writer: Analytics<Record>,
 }
 
-pub async fn new<Record>(
-    client: Client,
-    bucket_name: String,
-    export_name: &'static str,
-) -> Result<Adapter<Record>>
+pub async fn requests<Record>(client: Client, bucket_name: String) -> Result<Adapter<Record>>
 where
     Record: Send + Sync + 'static,
     [Record]: RecordWriter<Record>,
 {
     let exporter = AwsExporter::new(AwsOpts {
-        export_prefix: "verify-server",
-        export_name,
+        export_prefix: "verify-server/requests",
+        export_name: "requests",
         file_extension: "parquet",
         bucket_name: bucket_name.into(),
         s3_client: client,

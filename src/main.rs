@@ -57,7 +57,8 @@ pub struct Configuration {
     pub secret: String,
 
     pub s3_endpoint: Option<String>,
-    pub s3_bucket: Option<String>,
+
+    pub data_lake_bucket: Option<String>,
 
     pub geoip_db_bucket: Option<String>,
     pub geoip_db_key: Option<String>,
@@ -119,10 +120,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let scam_guard = scam_guard::data_api::new(config.data_api_url, config.data_api_auth_token)
         .cached(scam_guard_cache);
 
-    let event_sink = if let Some(bucket) = config.s3_bucket {
-        Some(event_sink::s3::new(s3_client, bucket, "requests").await?)
+    let event_sink = if let Some(bucket) = config.data_lake_bucket {
+        Some(event_sink::s3::requests(s3_client, bucket).await?)
     } else {
-        tracing::info!("s3_bucket is not specified, analytics are going to be disabled");
+        tracing::info!("data_lake_bucket is not specified, analytics are going to be disabled");
         None
     };
 

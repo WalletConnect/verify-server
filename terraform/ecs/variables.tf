@@ -105,3 +105,11 @@ variable "geoip_db_key" {
   description = "The key of the GeoIP database in the S3 bucket"
   type        = string
 }
+
+#---------------------------------------
+# Analytics
+
+variable "data_lake_bucket_name" {
+  description = "The name of the S3 bucket where the analytics data is stored"
+  type        = string
+}

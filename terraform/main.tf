@@ -1,10 +1,11 @@
 locals {
-  app_name             = "verify"
-  fqdn                 = terraform.workspace == "prod" ? var.public_url : "${terraform.workspace}.${var.public_url}"
-  backup_fqdn          = replace(local.fqdn, ".com", ".org")
-  latest_release_name  = data.github_release.latest_release.name
-  version              = coalesce(var.image_version, substr(local.latest_release_name, 1, length(local.latest_release_name)))
-  geoip_db_bucket_name = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
+  app_name              = "verify"
+  fqdn                  = terraform.workspace == "prod" ? var.public_url : "${terraform.workspace}.${var.public_url}"
+  backup_fqdn           = replace(local.fqdn, ".com", ".org")
+  latest_release_name   = data.github_release.latest_release.name
+  version               = coalesce(var.image_version, substr(local.latest_release_name, 1, length(local.latest_release_name)))
+  geoip_db_bucket_name  = "${terraform.workspace}.relay.geo.ip.database.private.${terraform.workspace}.walletconnect"
+  data_lake_bucket_name = "walletconnect.data-lake.${terraform.workspace}"
 }
 
 data "assert_test" "workspace" {
@@ -119,4 +120,5 @@ module "ecs" {
   secret                      = var.secret
   geoip_db_bucket_name        = local.geoip_db_bucket_name
   geoip_db_key                = var.geoip_db_key
+  data_lake_bucket_name       = local.data_lake_bucket_name
 }
