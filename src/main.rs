@@ -7,12 +7,20 @@ use {
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
     },
     bouncer::{
+        event_sink,
+        http_server::{RequestInfo, ServerConfig},
         project_registry::{self, CachedExt as _},
         scam_guard,
         util::redis,
+        GetAttestationHandled,
+        GetVerifyStatusHandled,
+        IsScam,
+        SetAttestationHandled,
+        VerifyStatus,
     },
     build_info::VersionControl,
     futures::{future::select, FutureExt},
+    parquet_derive::ParquetRecordWriter,
     serde::{Deserialize, Deserializer},
     std::{future::Future, str::FromStr, sync::Arc},
     tap::TapFallible,
@@ -49,6 +57,7 @@ pub struct Configuration {
     pub secret: String,
 
     pub s3_endpoint: Option<String>,
+    pub s3_bucket: Option<String>,
 
     pub geoip_db_bucket: Option<String>,
     pub geoip_db_key: Option<String>,
@@ -73,8 +82,8 @@ async fn main() -> Result<(), anyhow::Error> {
             .init();
     }
 
-    let s3_client = get_s3_client(&config).await;
-    let geoip_resolver = get_geoip_resolver(&config, &s3_client).await;
+    let s3_client = s3_client(&config).await;
+    let geoip_resolver = geoip_resolver(&config, &s3_client).await;
 
     // By default `axum_prometheus` exposes http latency as a Summary, which
     // provides quite limited querying functionaliy. `set_buckets_for_metrics`
@@ -110,15 +119,27 @@ async fn main() -> Result<(), anyhow::Error> {
     let scam_guard = scam_guard::data_api::new(config.data_api_url, config.data_api_auth_token)
         .cached(scam_guard_cache);
 
-    let app = bouncer::new((attestation_store, project_registry, scam_guard));
+    let event_sink = if let Some(bucket) = config.s3_bucket {
+        Some(event_sink::s3::new(s3_client, bucket, "requests").await?)
+    } else {
+        tracing::info!("s3_bucket is not specified, analytics are going to be disabled");
+        None
+    };
+
+    let svc = bouncer::Service::new((attestation_store, project_registry, scam_guard))
+        .observable(event_sink);
+
+    let server_cfg = ServerConfig {
+        port: config.port,
+        metrics_port: config.prometheus_port,
+        secret: config.secret.as_bytes(),
+        blocked_countries: config.blocked_countries,
+    };
 
     bouncer::http_server::run(
-        app,
-        config.port,
-        config.secret.as_bytes(),
-        config.blocked_countries,
+        server_cfg,
+        svc,
         move || prometheus.render(),
-        config.prometheus_port,
         health_provider,
         geoip_resolver,
         signals,
@@ -184,13 +205,13 @@ where
         .map_err(|e| D::Error::custom(format!("Invalid tracing::Level: {e}")))
 }
 
-async fn get_s3_client(config: &Configuration) -> S3Client {
+pub async fn s3_client(config: &Configuration) -> S3Client {
     let region_provider = RegionProviderChain::first_try(Region::new("eu-central-1"));
     let shared_config = aws_config::from_env().region(region_provider).load().await;
 
     let aws_config = match &config.s3_endpoint {
         Some(s3_endpoint) => {
-            info!(%s3_endpoint, "initializing analytics with custom s3 endpoint");
+            tracing::info!(%s3_endpoint, "initializing s3 client with custom endpoint");
 
             aws_sdk_s3::config::Builder::from(&shared_config)
                 .endpoint_url(s3_endpoint)
@@ -202,7 +223,7 @@ async fn get_s3_client(config: &Configuration) -> S3Client {
     S3Client::from_conf(aws_config)
 }
 
-async fn get_geoip_resolver(
+async fn geoip_resolver(
     config: &Configuration,
     s3_client: &S3Client,
 ) -> Option<Arc<MaxMindResolver>> {
@@ -217,8 +238,66 @@ async fn get_geoip_resolver(
                 .map(Arc::new)
         }
         _ => {
-            info!("analytics geoip lookup is disabled");
+            info!("geoip lookup is disabled");
             None
+        }
+    }
+}
+
+#[derive(Debug, Default, ParquetRecordWriter)]
+struct RequestRecord {
+    r#type: &'static str,
+    success: bool,
+
+    project_id: Option<String>,
+    verify_status: Option<&'static str>,
+    attestation_id: Option<String>,
+    origin: Option<String>,
+    is_scam: Option<bool>,
+}
+
+impl<'c, 'r> From<GetVerifyStatusHandled<'c, 'r, RequestInfo>> for RequestRecord {
+    fn from(ev: GetVerifyStatusHandled<'c, 'r, RequestInfo>) -> Self {
+        Self {
+            r#type: "get_verify_status",
+            success: ev.result.is_ok(),
+            project_id: Some(ev.cmd.inner.project_id.as_ref().to_string()),
+            verify_status: ev.result.as_ref().ok().map(|status| match status {
+                VerifyStatus::Disabled => "disabled",
+                VerifyStatus::Enabled { .. } => "enabled",
+            }),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'c, 'r> From<SetAttestationHandled<'c, 'r, RequestInfo>> for RequestRecord {
+    fn from(ev: SetAttestationHandled<'c, 'r, RequestInfo>) -> Self {
+        Self {
+            r#type: "set_attestation",
+            success: ev.result.is_ok(),
+            attestation_id: Some(ev.cmd.inner.id.to_string()),
+            origin: Some(ev.cmd.inner.origin.to_string()),
+            ..Default::default()
+        }
+    }
+}
+
+impl<'c, 'r> From<GetAttestationHandled<'c, 'r, RequestInfo>> for RequestRecord {
+    fn from(ev: GetAttestationHandled<'c, 'r, RequestInfo>) -> Self {
+        let attestation = ev.result.as_ref().ok().and_then(|opt| opt.as_ref());
+
+        Self {
+            r#type: "get_attestation",
+            success: ev.result.is_ok(),
+            attestation_id: Some(ev.cmd.inner.id.to_string()),
+            origin: attestation.map(|a| a.origin.to_string()),
+            is_scam: attestation.and_then(|a| match a.is_scam {
+                IsScam::Yes => Some(true),
+                IsScam::No => Some(false),
+                IsScam::Unknown => None,
+            }),
+            ..Default::default()
         }
     }
 }

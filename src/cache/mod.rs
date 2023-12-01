@@ -4,12 +4,12 @@ pub mod redis;
 
 #[async_trait]
 pub trait Cache<K, V>: Clone + Send + Sync + 'static {
-    async fn set(&self, key: K, value: &V) -> anyhow::Result<()>
+    async fn set(&self, key: &K, value: &V) -> anyhow::Result<()>
     where
         K: 'async_trait,
         V: 'async_trait;
 
-    async fn get(&self, key: K) -> anyhow::Result<Output<V>>
+    async fn get(&self, key: &K) -> anyhow::Result<Output<V>>
     where
         K: 'async_trait;
 }

@@ -28,7 +28,7 @@ where
 {
     #[instrument(level = "debug", skip(self))]
     async fn is_scam(&self, domain: &str) -> Result<IsScam> {
-        match self.cache.get(domain).await {
+        match self.cache.get(&domain).await {
             Ok(cache::Output::Hit(data)) => {
                 debug!("get: hit");
                 counter!("scam_guard_cache_hits", 1);
@@ -52,7 +52,7 @@ where
         // Do not block on cache write.
         tokio::spawn(async move {
             let _ = cache
-                .set(&domain, &data)
+                .set(&domain.as_str(), &data)
                 .await
                 .tap_err(|e| error!("set: {e:?}"))
                 .tap_err(|_| counter!("scam_guard_cache_write_errors", 1))

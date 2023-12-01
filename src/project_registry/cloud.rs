@@ -17,7 +17,7 @@ pub fn new(base_url: impl Into<String>, auth_token: &str) -> Result<impl Project
 
 #[async_trait]
 impl ProjectRegistry for RegistryHttpClient {
-    async fn project_data(&self, id: ProjectId) -> Result<Option<ProjectData>> {
+    async fn project_data(&self, id: &ProjectId) -> Result<Option<ProjectData>> {
         let data = RegistryClient::project_data(self, id.as_ref())
             .await
             .tap(|_| counter!("project_registry_requests", 1))
