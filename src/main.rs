@@ -254,6 +254,9 @@ struct RequestRecord {
     attestation_id: Option<String>,
     origin: Option<String>,
     is_scam: Option<bool>,
+
+    user_agent: Option<String>,
+    country: Option<Arc<str>>,
 }
 
 impl<'c, 'r> From<GetVerifyStatusHandled<'c, 'r, RequestInfo>> for RequestRecord {
@@ -266,6 +269,8 @@ impl<'c, 'r> From<GetVerifyStatusHandled<'c, 'r, RequestInfo>> for RequestRecord
                 VerifyStatus::Disabled => "disabled",
                 VerifyStatus::Enabled { .. } => "enabled",
             }),
+            user_agent: ev.cmd.context.user_agent,
+            country: ev.cmd.context.country,
             ..Default::default()
         }
     }
@@ -278,6 +283,8 @@ impl<'c, 'r> From<SetAttestationHandled<'c, 'r, RequestInfo>> for RequestRecord 
             success: ev.result.is_ok(),
             attestation_id: Some(ev.cmd.inner.id.to_string()),
             origin: Some(ev.cmd.inner.origin.to_string()),
+            user_agent: ev.cmd.context.user_agent,
+            country: ev.cmd.context.country,
             ..Default::default()
         }
     }
@@ -297,6 +304,8 @@ impl<'c, 'r> From<GetAttestationHandled<'c, 'r, RequestInfo>> for RequestRecord 
                 IsScam::No => Some(false),
                 IsScam::Unknown => None,
             }),
+            user_agent: ev.cmd.context.user_agent,
+            country: ev.cmd.context.country,
             ..Default::default()
         }
     }
