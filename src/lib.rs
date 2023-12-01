@@ -252,27 +252,34 @@ impl<I: Infra> Service<I> {
     }
 }
 
+/// Command with an execution context attached to it.
 #[derive(Debug)]
 pub struct ContextualCommand<Cmd, Ctx> {
     pub inner: Cmd,
     pub context: Ctx,
 }
 
+/// Event of a command being handled.
 #[derive(Debug)]
 pub struct CommandHandled<Cmd, Ctx, Res> {
     pub cmd: ContextualCommand<Cmd, Ctx>,
     pub result: Res,
 }
 
+/// Event of [`GetVerifyStatus`] command being handled.
 pub type GetVerifyStatusHandled<'c, 'r, Ctx> =
     CommandHandled<GetVerifyStatus<'c>, Ctx, &'r GetVerifyStatusResult>;
 
+/// Event of [`SetAttestation`] command being handled.
 pub type SetAttestationHandled<'c, 'r, Ctx> =
     CommandHandled<SetAttestation<'c>, Ctx, &'r SetAttestationResult>;
 
+/// Event of [`GetAttestation`] command being handled.
 pub type GetAttestationHandled<'c, 'r, Ctx> =
     CommandHandled<GetAttestation<'c>, Ctx, &'r GetAttestationResult>;
 
+/// Observable [`Service`] emmitting [`CommandHandled`] events to an
+/// [`EventSink`].
 pub struct Observable<S, E> {
     service: S,
     event_sink: Option<E>,
