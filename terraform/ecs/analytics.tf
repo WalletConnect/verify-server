@@ -23,7 +23,7 @@ resource "aws_iam_policy" "analytics-data-lake_bucket_access" {
         "Sid" : "AllGenerateDataKeyForAnalyticsBucket",
         "Effect" : "Allow",
         "Action" : ["kms:GenerateDataKey"],
-        "Resource" : "arn:aws:kms:eu-central-1:898587786287:key/06e7c9fd-943d-47bf-bcf4-781b44411ba4"
+        "Resource" : var.data_lake_kms_key_arn,
       }
     ]
   })
