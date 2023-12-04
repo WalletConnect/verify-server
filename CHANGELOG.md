@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.33.0 - 2023-12-04
+#### Features
+- analytics (#57) - (e1c9265) - xDarksome
+- - -
+
 ## v0.32.0 - 2023-11-27
 #### Features
 - remove domain override for scam apps (#56) - (66d1ce4) - Derek
