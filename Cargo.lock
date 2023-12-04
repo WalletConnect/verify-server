@@ -53,7 +53,7 @@ dependencies = [
 [[package]]
 name = "analytics"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.5.1#356602ae5c095390dedc60cc897e559032d9c9ea"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.7.1#95b9936f0266b0f4fda40bfcce1b0b603e4dd520"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1252,7 +1252,7 @@ dependencies = [
 [[package]]
 name = "geoip"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.5.1#356602ae5c095390dedc60cc897e559032d9c9ea"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.7.1#95b9936f0266b0f4fda40bfcce1b0b603e4dd520"
 dependencies = [
  "aws-sdk-s3",
  "axum-client-ip",
@@ -3209,7 +3209,7 @@ checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
 [[package]]
 name = "wc"
 version = "0.1.0"
-source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.5.1#356602ae5c095390dedc60cc897e559032d9c9ea"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.7.1#95b9936f0266b0f4fda40bfcce1b0b603e4dd520"
 dependencies = [
  "analytics",
  "geoip",
