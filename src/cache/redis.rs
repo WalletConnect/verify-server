@@ -14,7 +14,7 @@ where
     K: AsRef<str> + Send + Sync,
     for<'de> V: Serialize + Deserialize<'de> + Send + Sync,
 {
-    async fn set(&self, key: K, value: &V) -> anyhow::Result<()>
+    async fn set(&self, key: &K, value: &V) -> anyhow::Result<()>
     where
         K: 'async_trait,
         V: 'async_trait,
@@ -23,7 +23,7 @@ where
         self.set_ex(key.as_ref(), bytes, TTL_SECS).await
     }
 
-    async fn get(&self, key: K) -> anyhow::Result<Output<V>>
+    async fn get(&self, key: &K) -> anyhow::Result<Output<V>>
     where
         K: 'async_trait,
     {

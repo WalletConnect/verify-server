@@ -1,6 +1,13 @@
 use {
-    super::State,
-    crate::{Bouncer, IsScam},
+    super::{Command, RequestInfo, State},
+    crate::{
+        GetAttestation,
+        GetAttestationResult,
+        Handle,
+        IsScam,
+        SetAttestation,
+        SetAttestationResult,
+    },
     axum::{
         extract::{Json, Path},
         http::StatusCode,
@@ -20,12 +27,19 @@ pub(super) struct Body {
 }
 
 #[instrument(level = "debug", skip(s))]
-pub(super) async fn get(
-    s: State<impl Bouncer>,
+pub(super) async fn get<S, G>(
+    s: State<S, G>,
     Path(attestation_id): Path<String>,
-) -> Result<impl IntoResponse, StatusCode> {
-    s.bouncer
-        .get_attestation(&attestation_id)
+    request_info: RequestInfo,
+) -> Result<impl IntoResponse, StatusCode>
+where
+    S: for<'a> Handle<Command<GetAttestation<'a>>, Result = GetAttestationResult>,
+{
+    let cmd = GetAttestation {
+        id: &attestation_id,
+    };
+
+    s.handle(cmd, request_info)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)
@@ -42,15 +56,23 @@ pub(super) async fn get(
 }
 
 #[instrument(level = "debug", skip(s))]
-pub(super) async fn post(
-    s: State<impl Bouncer>,
+pub(super) async fn post<S, G>(
+    s: State<S, G>,
     headers: HeaderMap,
+    request_info: RequestInfo,
     body: Json<Body>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, StatusCode>
+where
+    S: for<'a> Handle<Command<SetAttestation<'a>>, Result = SetAttestationResult>,
+{
     s.token_manager.validate_csrf_token(&headers)?;
 
-    s.bouncer
-        .set_attestation(&body.attestation_id, &body.origin)
+    let cmd = SetAttestation {
+        id: &body.attestation_id,
+        origin: &body.origin,
+    };
+
+    s.handle(cmd, request_info)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
         .map(|_| (StatusCode::OK, "OK".to_string()))

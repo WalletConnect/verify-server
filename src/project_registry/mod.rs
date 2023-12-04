@@ -10,7 +10,7 @@ use {
 
 #[async_trait]
 pub trait ProjectRegistry: Send + Sync + 'static {
-    async fn project_data(&self, id: ProjectId) -> Result<Option<ProjectData>>;
+    async fn project_data(&self, id: &ProjectId) -> Result<Option<ProjectData>>;
 }
 
 pub type Error = anyhow::Error;
@@ -23,7 +23,7 @@ where
     C: Cache<ProjectId, Option<ProjectData>>,
 {
     #[instrument(level = "debug", skip(self))]
-    async fn project_data(&self, id: ProjectId) -> Result<Option<ProjectData>> {
+    async fn project_data(&self, id: &ProjectId) -> Result<Option<ProjectData>> {
         match self.cache.get(id).await {
             Ok(cache::Output::Hit(data)) => {
                 debug!("get: hit");
@@ -44,11 +44,12 @@ where
 
         let cache = self.cache.clone();
         let data_clone = data.clone();
+        let id = *id;
 
         // Do not block on cache write.
         tokio::spawn(async move {
             let _ = cache
-                .set(id, &data_clone)
+                .set(&id, &data_clone)
                 .await
                 .tap_err(|e| error!("set: {e:?}"))
                 .tap_err(|_| counter!("project_registry_cache_write_errors", 1))

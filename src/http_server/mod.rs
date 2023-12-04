@@ -1,11 +1,29 @@
 use {
-    crate::{Bouncer, Domain, GetVerifyStatusError, ProjectId, VerifyStatus},
+    crate::{
+        ContextualCommand,
+        Domain,
+        GetAttestation,
+        GetAttestationResult,
+        GetVerifyStatus,
+        GetVerifyStatusError,
+        GetVerifyStatusResult,
+        Handle,
+        ProjectId,
+        SetAttestation,
+        SetAttestationResult,
+        VerifyStatus,
+    },
+    async_trait::async_trait,
     axum::{
-        extract::Path,
+        extract::{FromRequestParts, Path},
+        headers::UserAgent,
+        http::request,
         response::{Html, IntoResponse, Response},
         routing::{get, post},
         Router,
+        TypedHeader,
     },
+    axum_client_ip::InsecureClientIp,
     axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
     futures::FutureExt,
     hyper::{
@@ -16,13 +34,13 @@ use {
         StatusCode,
     },
     serde::{Deserialize, Serialize},
-    std::{future::Future, iter, net::SocketAddr, sync::Arc},
+    std::{convert::Infallible, future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
-    wc::geoip::{
-        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
-        MaxMindResolver,
+    wc::{
+        geoip,
+        geoip::block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
     },
 };
 
@@ -31,9 +49,33 @@ mod health;
 mod index_js;
 mod metrics;
 
-struct Server<B> {
-    bouncer: B,
+pub struct ServerConfig<'a> {
+    pub port: u16,
+    pub metrics_port: u16,
+    pub secret: &'a [u8],
+    pub blocked_countries: Vec<String>,
+}
+
+struct Server<S, G> {
+    service: S,
+    geoip_resolver: Option<G>,
     token_manager: TokenManager,
+}
+
+type Command<T> = ContextualCommand<T, RequestInfo>;
+
+impl<S, G> Server<S, G> {
+    async fn handle<Cmd>(&self, cmd: Cmd, request_info: RequestInfo) -> S::Result
+    where
+        S: Handle<Command<Cmd>>,
+    {
+        self.service
+            .handle(Command {
+                inner: cmd,
+                context: request_info,
+            })
+            .await
+    }
 }
 
 struct TokenManager {
@@ -50,19 +92,21 @@ impl TokenManager {
     }
 }
 
-type State<B> = axum::extract::State<Arc<Server<B>>>;
+type State<S, G> = axum::extract::State<Arc<Server<S, G>>>;
 
-pub async fn run(
-    app: impl Bouncer,
-    port: u16,
-    secret: &[u8],
-    blocked_countries: Vec<String>,
+pub async fn run<S, G>(
+    cfg: ServerConfig<'_>,
+    service: S,
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
-    metrics_port: u16,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
-    geoip_resolver: Option<Arc<MaxMindResolver>>,
+    geoip_resolver: Option<G>,
     shutdown: impl Future,
-) {
+) where
+    for<'a> S: Handle<Command<GetVerifyStatus<'a>>, Result = GetVerifyStatusResult>
+        + Handle<Command<SetAttestation<'a>>, Result = SetAttestationResult>
+        + Handle<Command<GetAttestation<'a>>, Result = GetAttestationResult>,
+    G: geoip::Resolver + Clone + Send + Sync + 'static,
+{
     let shutdown = shutdown
         .map(|_| info!("Shutting down servers gracefully"))
         .shared();
@@ -78,8 +122,9 @@ pub async fn run(
         .build();
 
     let state = Server {
-        bouncer: app,
-        token_manager: TokenManager::new(secret),
+        service,
+        geoip_resolver: geoip_resolver.clone(),
+        token_manager: TokenManager::new(cfg.secret),
     };
 
     let server: Router = Router::new()
@@ -91,10 +136,11 @@ pub async fn run(
         .route("/:project_id", get(root))
         .layer(metrics_layer)
         .with_state(Arc::new(state));
-    let server = if let Some(resolver) = geoip_resolver.clone() {
+    let server = if let (Some(resolver), false) = (geoip_resolver, cfg.blocked_countries.is_empty())
+    {
         server.layer(GeoBlockLayer::new(
             resolver,
-            blocked_countries.clone(),
+            cfg.blocked_countries,
             GeoBlockingPolicy::AllowAll,
         ))
     } else {
@@ -102,16 +148,18 @@ pub async fn run(
     };
     let server = server
         .into_make_service()
-        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(svc))
+        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.port))).serve(svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))
-        .tap(|_| info!("Serving at :{port}"));
+        .tap(|_| info!("Serving at :{}", cfg.port));
 
     let metrics_server = Router::new()
         .route("/metrics", get(metrics::get(metrics_provider)))
         .into_make_service()
-        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], metrics_port))).serve(svc))
+        .pipe(|svc| {
+            axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.metrics_port))).serve(svc)
+        })
         .pipe(|s| s.with_graceful_shutdown(shutdown))
-        .tap(|_| info!("Serving metrics at :{metrics_port}"));
+        .tap(|_| info!("Serving metrics at :{}", cfg.metrics_port));
 
     let _ = futures::join!(
         server.map(|_| info!("Server terminated")),
@@ -130,11 +178,19 @@ const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. P
                                    that the project is registered on cloud.walletconnect.com";
 
 #[instrument(level = "debug", skip(s))]
-async fn root(
-    s: State<impl Bouncer>,
+async fn root<S, G>(
+    s: State<S, G>,
     Path(project_id): Path<ProjectId>,
-) -> Result<Response, Response> {
-    Ok(match s.bouncer.get_verify_status(project_id).await? {
+    request_info: RequestInfo,
+) -> Result<Response, Response>
+where
+    S: for<'a> Handle<Command<GetVerifyStatus<'a>>, Result = GetVerifyStatusResult>,
+{
+    let cmd = GetVerifyStatus {
+        project_id: &project_id,
+    };
+
+    Ok(match s.handle(cmd, request_info).await? {
         VerifyStatus::Disabled => String::new().into_response(),
         VerifyStatus::Enabled { verified_domains } => {
             let token = s.token_manager.generate_csrf_token()?;
@@ -157,6 +213,39 @@ impl From<GetVerifyStatusError> for Response {
             }
             GetVerifyStatusError::Other(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct RequestInfo {
+    pub user_agent: Option<String>,
+    pub country: Option<Arc<str>>,
+}
+
+#[async_trait]
+impl<S, G> FromRequestParts<Arc<Server<S, G>>> for RequestInfo
+where
+    G: geoip::Resolver,
+    Server<S, G>: Sync + Send,
+{
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        parts: &mut request::Parts,
+        server: &Arc<Server<S, G>>,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(Self {
+            user_agent: TypedHeader::<UserAgent>::from_request_parts(parts, server)
+                .await
+                .ok()
+                .map(|ua| ua.as_str().to_string()),
+            country: server.geoip_resolver.as_ref().and_then(|resolver| {
+                InsecureClientIp::from(&parts.headers, &parts.extensions)
+                    .ok()
+                    .and_then(|ip| resolver.lookup_geo_data(ip.0).ok())
+                    .and_then(|data| data.country)
+            }),
+        })
     }
 }
 
