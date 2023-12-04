@@ -121,4 +121,5 @@ module "ecs" {
   geoip_db_bucket_name        = local.geoip_db_bucket_name
   geoip_db_key                = var.geoip_db_key
   data_lake_bucket_name       = local.data_lake_bucket_name
+  data_lake_kms_key_arn       = var.data_lake_kms_key_arn
 }

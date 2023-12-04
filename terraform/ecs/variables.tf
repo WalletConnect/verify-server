@@ -113,3 +113,8 @@ variable "data_lake_bucket_name" {
   description = "The name of the S3 bucket where the analytics data is stored"
   type        = string
 }
+
+variable "data_lake_kms_key_arn" {
+  description = "The ARN of the KMS encryption key for data-lake bucket."
+  type        = string
+}
