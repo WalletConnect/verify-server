@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    networks:
+      - walletconnect-server
+    ports:
+      - 4317:4317
+      - 16686:16686
+    volumes:
+      - server:/jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
+networks:
+  walletconnect-server:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.10.1.0/16
+
+volumes:
+  server:
