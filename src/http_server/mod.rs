@@ -318,7 +318,7 @@ fn build_content_security_header(domains: Vec<Domain>) -> String {
 #[test]
 fn test_build_content_security_header() {
     fn case(domains: &[&str], expected: &str) {
-        let domains = domains.into_iter().map(|s| Domain::from(s.to_string()));
+        let domains = domains.iter().map(|s| Domain::from(s.to_string()));
         let got = build_content_security_header(domains.collect());
         assert_eq!(&got, expected);
     }
@@ -348,5 +348,5 @@ fn csrf_validation_checks_jwt_header_and_payload() {
     let valid_header_invalid_payload =
         "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.<svg/onload=alert(document.domain)>";
 
-    assert!(!CsrfToken::validate_format(&valid_header_invalid_payload))
+    assert!(!CsrfToken::validate_format(valid_header_invalid_payload))
 }
