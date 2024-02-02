@@ -33,33 +33,6 @@ jobs:
       - name: health-check
         run: curl "${{ inputs.stage-url }}"
 
-  integration-tests:
-    name: Integration Tests - ${{ inputs.stage }}
-    runs-on:
-      group: ${{ vars.RUN_GROUP }}
-    environment:
-      name: ${{ inputs.stage }}
-      url: ${{ inputs.stage-url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust ${{ inputs.rust-toolchain }}
-        uses: WalletConnect/actions-rs/toolchain@1.0.0
-        with:
-          toolchain: ${{ inputs.rust-toolchain }}
-          profile: 'default'
-          override: true
-
-      - name: "Run Integration Tests"
-        uses: WalletConnect/actions-rs/cargo@1.0.0
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_URL: ${{ inputs.stage-url }}
-        with:
-          command: test
-          args: --test integration
-
   integration-tests-ts:
     name: TS Integration Tests - ${{ inputs.stage }}
     runs-on:
@@ -69,7 +42,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
           cache: 'yarn'
@@ -79,7 +52,4 @@ jobs:
         run: yarn install
 
       - name: Yarn Integration Tests
-        run: yarn integration
-        env:
-          PROJECT_ID: ${{ secrets.PROJECT_ID }}
-          RPC_URL: ${{ inputs.stage-url }}
+        run: yarn integration:${{ inputs.stage }}
