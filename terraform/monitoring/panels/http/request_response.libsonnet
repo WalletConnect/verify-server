@@ -4,22 +4,11 @@ local defaults  = import '../../grafonnet-lib/defaults.libsonnet';
 local panels = grafana.panels;
 local targets = grafana.targets;
 
-local thresholds = {
-  warning:  80,
-};
-
 local _configuration = defaults.configuration.timeseries
-  .withUnit(grafana.fieldConfig.units.Milliseconds)
   .withThresholdStyle(grafana.fieldConfig.thresholdStyle.Area)
   .withThresholds(
-    baseColor = defaults.values.colors.ok,
-    steps = [
-      { value: thresholds.warning, color: defaults.values.colors.critical },
-    ]
-  )
-  .withSoftLimit(
-    axisSoftMin = 0,
-    axisSoftMax = thresholds.warning,
+    baseColor = 'transparent',
+    steps = []
   )
   .addOverrides([
     grafana.override.newColorOverride(

@@ -34,7 +34,7 @@ local _configuration = defaults.configuration.timeseries
 {
   new(ds, vars)::
     panels.timeseries(
-      title       = 'Cache Weads / s',
+      title       = 'Cache Reads / s',
       datasource  = ds.prometheus,
     )
     .configure(_configuration)

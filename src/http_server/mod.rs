@@ -308,6 +308,7 @@ fn build_content_security_header(domains: Vec<Domain>) -> String {
 
         // `*.domain` doesn't match `domain` by the Content-Security-Policy spec, so
         // we are specifying both.
+        //
         // See the test for this function if you have any doubts.
         [" ", proto, "*.", domain, " ", proto, domain]
     });

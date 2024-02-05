@@ -30,7 +30,7 @@ cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.9.
 # O11y
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
-metrics = "0.20"
+metrics = "0.21"
 axum-prometheus = "0.3"
 
 # Serialisation
