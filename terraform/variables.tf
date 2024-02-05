@@ -1,70 +1,136 @@
-variable "cpu" {
-  type = number
+#-------------------------------------------------------------------------------
+# Configuration
+
+variable "grafana_auth" {
+  description = "The API Token for the Grafana instance"
+  type        = string
+  default     = ""
 }
 
-variable "memory" {
-  type = number
-}
 
-variable "project_registry_url" {
-  type = string
-}
+#-------------------------------------------------------------------------------
+# Service
 
-variable "project_registry_auth_token" {
-  type      = string
-  sensitive = true
-}
-
-variable "data_api_url" {
-  type = string
-}
-
-variable "data_api_auth_token" {
-  type      = string
-  sensitive = true
+variable "name" {
+  description = "The name of the application"
+  type        = string
+  default     = "verify-server"
 }
 
 variable "region" {
-  type    = string
-  default = "eu-central-1"
-}
-
-variable "secret" {
-  type = string
-}
-
-variable "azs" {
-  type    = list(string)
-  default = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
-}
-
-variable "public_url" {
-  type    = string
-  default = "verify.walletconnect.com"
-}
-
-variable "grafana_endpoint" {
-  type = string
+  description = "AWS region to deploy to"
+  type        = string
 }
 
 variable "image_version" {
-  type    = string
-  default = ""
+  description = "The ECS tag of the image to deploy"
+  type        = string
 }
 
-#---------------------------------------
-# GeoIP
+variable "task_cpu" {
+  description = "The number of CPU units to allocate to the task"
+  type        = number
+}
+
+variable "task_memory" {
+  description = "The amount of memory to allocate to the task"
+  type        = number
+}
+
+variable "app_autoscaling_desired_count" {
+  description = "The desired number of tasks to run"
+  type        = number
+  default     = 1
+}
+
+variable "app_autoscaling_min_capacity" {
+  description = "The minimum number of tasks to run when autoscaling"
+  type        = number
+  default     = 1
+}
+
+variable "app_autoscaling_max_capacity" {
+  description = "The maximum number of tasks to run when autoscaling"
+  type        = number
+  default     = 1
+}
+
+#-------------------------------------------------------------------------------
+# Application
+
+variable "app_secret" {
+  description = "The application secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "log_level" {
+  description = "Defines logging level for the application"
+  type        = string
+}
+
+variable "ofac_blocked_countries" {
+  description = "The list of countries to block"
+  type        = string
+  default     = ""
+}
+
+
+#-------------------------------------------------------------------------------
+# Project Registry
+
+variable "project_registry_api_url" {
+  description = "The url of the project registry API"
+  type        = string
+}
+
+variable "project_registry_api_auth_token" {
+  description = "The auth token for the project registry API"
+  type        = string
+  sensitive   = true
+}
+
+#-------------------------------------------------------------------------------
+# Data API
+
+variable "data_api_url" {
+  description = "The url of the data API"
+  type        = string
+}
+
+variable "data_api_auth_token" {
+  description = "The auth token for the data API"
+  type        = string
+  sensitive   = true
+}
+
+
+#-------------------------------------------------------------------------------
+# Analytics
 
 variable "geoip_db_key" {
   description = "The name to the GeoIP database"
   type        = string
-  default     = "GeoLite2-City.mmdb"
 }
 
-#---------------------------------------
-# Analytics
 
-variable "data_lake_kms_key_arn" {
-  description = "The ARN of the KMS encryption key for data-lake bucket."
+#-------------------------------------------------------------------------------
+# Alerting / Monitoring
+
+variable "notification_channels" {
+  description = "The notification channels to send alerts to"
+  type        = list(any)
+  default     = []
+}
+
+variable "webhook_cloudwatch_p2" {
+  description = "The webhook to send CloudWatch P2 alerts to"
   type        = string
+  default     = ""
+}
+
+variable "webhook_prometheus_p2" {
+  description = "The webhook to send Prometheus P2 alerts to"
+  type        = string
+  default     = ""
 }
