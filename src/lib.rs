@@ -1,3 +1,13 @@
+use {
+    anyhow::Context as _,
+    arrayvec::ArrayString,
+    derive_more::{AsRef, From},
+    serde::{Deserialize, Serialize},
+    std::time::Duration,
+    tap::{Tap, TapFallible, TapOptional},
+    tracing::{error, instrument, warn},
+    wc::future::FutureExt as _,
+};
 pub use {
     anyhow::Error,
     async_trait::async_trait,
@@ -5,13 +15,6 @@ pub use {
     event_sink::EventSink,
     project_registry::ProjectRegistry,
     scam_guard::ScamGuard,
-};
-use {
-    arrayvec::ArrayString,
-    derive_more::{AsRef, From},
-    serde::{Deserialize, Serialize},
-    tap::{Tap, TapFallible, TapOptional},
-    tracing::{error, instrument, warn},
 };
 
 pub mod attestation_store;
@@ -100,7 +103,9 @@ impl<'a, I: Infra> Handle<GetVerifyStatus<'a>> for Service<I> {
         let project_data = self
             .project_registry()
             .project_data(cmd.project_id)
+            .with_timeout(Duration::from_secs(10))
             .await
+            .context("ProjectRegistry::project_data timed out")?
             .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
             .ok_or(GetVerifyStatusError::UnknownProject)
             .tap_err(|_| warn!("Unknown project id"))?;
@@ -179,8 +184,11 @@ impl<'a, I: Infra> Handle<GetAttestation<'a>> for Service<I> {
         let is_scam = self
             .scam_guard()
             .is_scam(&origin)
+            .with_timeout(Duration::from_secs(10))
             .await
-            .map_err(|e| error!("ScamGuard::is_scam: {e:?}"))
+            .map_err(|_| error!("ScamGuard::is_scam timed out"))
+            .ok()
+            .and_then(|res| res.map_err(|e| error!("ScamGuard::is_scam: {e:?}")).ok())
             .unwrap_or(IsScam::Unknown);
 
         Ok(Some(Attestation { origin, is_scam }))

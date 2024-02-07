@@ -1131,6 +1131,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "future"
+version = "0.1.0"
+source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.7.1#95b9936f0266b0f4fda40bfcce1b0b603e4dd520"
+dependencies = [
+ "pin-project",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3183,6 +3194,7 @@ version = "0.1.0"
 source = "git+https://github.com/WalletConnect/utils-rs.git?tag=v0.7.1#95b9936f0266b0f4fda40bfcce1b0b603e4dd520"
 dependencies = [
  "analytics",
+ "future",
  "geoip",
 ]
 
