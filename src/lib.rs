@@ -186,8 +186,9 @@ impl<'a, I: Infra> Handle<GetAttestation<'a>> for Service<I> {
             .is_scam(&origin)
             .with_timeout(Duration::from_secs(10))
             .await
-            .context("ScamGuard::is_scam timed out")?
-            .map_err(|e| error!("ScamGuard::is_scam: {e:?}"))
+            .map_err(|_| error!("ScamGuard::is_scam timed out"))
+            .ok()
+            .and_then(|res| res.map_err(|e| error!("ScamGuard::is_scam: {e:?}")).ok())
             .unwrap_or(IsScam::Unknown);
 
         Ok(Some(Attestation { origin, is_scam }))
