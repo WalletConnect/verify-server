@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.34.1 - 2024-02-07
+#### Bug Fixes
+- update `ci_workflow` dependencies (#64) - (3efb889) - Xavier Basty
+
+- - -
+
 ## v0.34.0 - 2024-02-07
 #### Bug Fixes
 - add timeouts to external api requests (#63) - (9c0140d) - xDarksome
