@@ -8,7 +8,7 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.7.1", features = ["geoip", "geoblock", "analytics"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.7.1", features = ["geoip", "geoblock", "analytics", "future"] }
 
 tokio = { version = "1", features = ["full"] }
 
