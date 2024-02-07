@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.34.0 - 2024-02-07
+#### Bug Fixes
+- add timeouts to external api requests (#63) - (9c0140d) - xDarksome
+- Grafana panels (#62) - (7bdcc65) - Xavier Basty
+#### Features
+- migrate to dedicated AWS account and update CI (#60) - (ab057bb) - Xavier Basty
+- scale to 4CPU/8GiB (#59) - (dc8c5ce) - xDarksome
+
+- - -
+
 ## v0.33.0 - 2023-12-04
 #### Features
 - analytics (#57) - (e1c9265) - xDarksome
