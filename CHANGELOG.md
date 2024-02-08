@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.34.3 - 2024-02-08
+#### Bug Fixes
+- validate CI run - (b7b9d98) - Xavier Basty
+- remove prefix from cocogitto releases - (d318ab1) - Xavier Basty
+- validate CI run - (32ebae1) - Xavier Basty
+- validate CI run (#66) - (10bf292) - Xavier Basty
+
+- - -
+
 ## 0.34.2 - 2024-02-08
 #### Bug Fixes
 - validate CI run (#65) - (85cdf24) - Xavier Basty
