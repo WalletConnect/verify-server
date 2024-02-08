@@ -22,7 +22,6 @@ resource "aws_iam_role" "application_role" {
   })
 }
 
-
 # ECS Cluster, Task, Service, and Load Balancer for our app
 module "ecs" {
   source  = "./ecs"
