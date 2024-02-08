@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.34.2 - 2024-02-08
+#### Bug Fixes
+- validate CI run (#65) - (85cdf24) - Xavier Basty
+
+- - -
+
 ## v0.34.1 - 2024-02-07
 #### Bug Fixes
 - update `ci_workflow` dependencies (#64) - (3efb889) - Xavier Basty
