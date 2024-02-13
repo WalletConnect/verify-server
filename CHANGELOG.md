@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.34.4 - 2024-02-13
+#### Bug Fixes
+- **(cd)** fixing the current version deployment (#69) - (a336d3e) - Max Kalashnikoff
+- refresh token only when necessary (#71) - (0a9d59b) - Chris Smith
+
+- - -
+
 ## 0.34.3 - 2024-02-08
 #### Bug Fixes
 - validate CI run - (b7b9d98) - Xavier Basty
