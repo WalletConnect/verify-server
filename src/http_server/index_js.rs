@@ -25,11 +25,11 @@ window.addEventListener("message", (event) => {
         })
     })
 })
-// auto reload to refresh token
+// token is valid for 1 hour, refresh every 55 minutes by reloading
 window.addEventListener("load", async () => {
     setInterval(() => {
         window.location.reload()
-    }, 60_000)
+    }, 1000 * 60 * 55)
 })
 
 // notify the SDK that the iframe is ready
