@@ -1,4 +1,5 @@
 use {
+    self::index_js::SCRIPT,
     crate::{
         ContextualCommand,
         Domain,
@@ -34,13 +35,13 @@ use {
         StatusCode,
     },
     serde::{Deserialize, Serialize},
-    std::{convert::Infallible, future::Future, iter, net::SocketAddr, sync::Arc},
+    std::{convert::Infallible, future::Future, iter, net::SocketAddr, str::Bytes, sync::Arc},
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
-    wc::{
-        geoip,
-        geoip::block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
+    wc::geoip::{
+        self,
+        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
     },
 };
 
@@ -132,7 +133,7 @@ pub async fn run<S, G>(
         .layer(cors_layer)
         .route("/health", get(health::get(health_provider)))
         .route("/attestation", post(attestation::post))
-        .route("/index.js", get(index_js::get))
+        .route("/index.js", get(index_js::get)) // TODO remove in next deploy
         .route("/:project_id", get(root))
         .layer(metrics_layer)
         .with_state(Arc::new(state));
@@ -167,13 +168,6 @@ pub async fn run<S, G>(
     );
 }
 
-fn index_html(token: &str) -> String {
-    format!(
-        "<!-- index.html --><html><head><script \
-         src=\"/index.js?token={token}\"></script></head></html>"
-    )
-}
-
 const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
                                    that the project is registered on cloud.walletconnect.com";
 
@@ -194,7 +188,7 @@ where
         VerifyStatus::Disabled => String::new().into_response(),
         VerifyStatus::Enabled { verified_domains } => {
             let token = s.token_manager.generate_csrf_token()?;
-            let html = index_html(&token);
+            let html = format!("<script>const csrfToken = '{token}';{SCRIPT}</script>");
             let csp = build_content_security_header(verified_domains);
             let headers = [
                 (header::CONTENT_SECURITY_POLICY, csp),

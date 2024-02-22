@@ -8,8 +8,7 @@ use {
     serde::Deserialize,
 };
 
-const TEMPLATE: &str = r#"
-const csrfToken = '{token}';
+const SCRIPT: &str = r#"
 // event subscribed by Verify Enclave
 window.addEventListener("message", (event) => {
     const attestationId = event.data
@@ -46,5 +45,8 @@ pub(super) async fn get(query: Query<Params>) -> Result<impl IntoResponse, Statu
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    Ok(Html(TEMPLATE.replacen("{token}", &query.token, 1)))
+    Ok(Html(format!(
+        "const csrfToken = '{}';{}",
+        query.token, SCRIPT
+    )))
 }
