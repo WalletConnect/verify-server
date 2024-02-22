@@ -168,6 +168,10 @@ pub async fn run<S, G>(
     );
 }
 
+fn index_html(token: &str) -> String {
+    format!("<script>const csrfToken = '{token}';{SCRIPT}</script>")
+}
+
 const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
                                    that the project is registered on cloud.walletconnect.com";
 
@@ -188,7 +192,7 @@ where
         VerifyStatus::Disabled => String::new().into_response(),
         VerifyStatus::Enabled { verified_domains } => {
             let token = s.token_manager.generate_csrf_token()?;
-            let html = format!("<script>const csrfToken = '{token}';{SCRIPT}</script>");
+            let html = index_html(&token);
             let csp = build_content_security_header(verified_domains);
             let headers = [
                 (header::CONTENT_SECURITY_POLICY, csp),
