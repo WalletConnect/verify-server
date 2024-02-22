@@ -35,7 +35,7 @@ use {
         StatusCode,
     },
     serde::{Deserialize, Serialize},
-    std::{convert::Infallible, future::Future, iter, net::SocketAddr, str::Bytes, sync::Arc},
+    std::{convert::Infallible, future::Future, iter, net::SocketAddr, sync::Arc},
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
