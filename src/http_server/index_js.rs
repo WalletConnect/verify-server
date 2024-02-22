@@ -41,12 +41,10 @@ pub(super) struct Params {
 }
 
 pub(super) async fn get(query: Query<Params>) -> Result<impl IntoResponse, StatusCode> {
-    if !CsrfToken::validate_format(&query.token) {
+    let token = query.token;
+    if !CsrfToken::validate_format(&token) {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    Ok(Html(format!(
-        "const csrfToken = '{}';{}",
-        query.token, SCRIPT
-    )))
+    Ok(Html(format!("const csrfToken = '{token}';{SCRIPT}")))
 }
