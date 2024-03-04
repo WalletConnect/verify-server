@@ -53,7 +53,7 @@ resource "aws_iam_policy" "datalake_bucket_access" {
         "Sid" : "AllObjectActionsInAnalyticsBucket",
         "Effect" : "Allow",
         "Action" : "s3:*Object",
-        "Resource" : ["arn:aws:s3:::${var.analytics_datalake_bucket_name}/${module.this.name}}/*"]
+        "Resource" : ["arn:aws:s3:::${var.analytics_datalake_bucket_name}/${module.this.name}/*"]
       },
       {
         "Sid" : "AllGenerateDataKeyForAnalyticsBucket",
