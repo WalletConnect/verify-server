@@ -1,4 +1,5 @@
 use {
+    self::index_js::SCRIPT,
     crate::{
         ContextualCommand,
         Domain,
@@ -38,9 +39,9 @@ use {
     tap::{Pipe, Tap},
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
-    wc::{
-        geoip,
-        geoip::block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
+    wc::geoip::{
+        self,
+        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
     },
 };
 
@@ -132,7 +133,7 @@ pub async fn run<S, G>(
         .layer(cors_layer)
         .route("/health", get(health::get(health_provider)))
         .route("/attestation", post(attestation::post))
-        .route("/index.js", get(index_js::get))
+        .route("/index.js", get(index_js::get)) // TODO remove in next deploy
         .route("/:project_id", get(root))
         .layer(metrics_layer)
         .with_state(Arc::new(state));
@@ -168,10 +169,7 @@ pub async fn run<S, G>(
 }
 
 fn index_html(token: &str) -> String {
-    format!(
-        "<!-- index.html --><html><head><script \
-         src=\"/index.js?token={token}\"></script></head></html>"
-    )
+    format!("<script>const csrfToken = '{token}';{SCRIPT}</script>")
 }
 
 const UNKNOWN_PROJECT_MSG: &str = "Project with the provided ID doesn't exist. Please, ensure \
