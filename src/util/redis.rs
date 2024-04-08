@@ -2,9 +2,7 @@ use {
     anyhow::Context as _,
     deadpool_redis::{
         redis::{AsyncCommands as _, FromRedisValue, ToRedisArgs},
-        Connection,
-        Pool,
-        Runtime,
+        Connection, Pool, Runtime,
     },
     metrics::counter,
     tap::TapFallible,

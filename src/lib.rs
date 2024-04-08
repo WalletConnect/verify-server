@@ -9,12 +9,8 @@ use {
     wc::future::FutureExt as _,
 };
 pub use {
-    anyhow::Error,
-    async_trait::async_trait,
-    attestation_store::AttestationStore,
-    event_sink::EventSink,
-    project_registry::ProjectRegistry,
-    scam_guard::ScamGuard,
+    anyhow::Error, async_trait::async_trait, attestation_store::AttestationStore,
+    event_sink::EventSink, project_registry::ProjectRegistry, scam_guard::ScamGuard,
 };
 
 pub mod attestation_store;

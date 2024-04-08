@@ -1,12 +1,7 @@
 use {
     super::{Command, RequestInfo, State},
     crate::{
-        GetAttestation,
-        GetAttestationResult,
-        Handle,
-        IsScam,
-        SetAttestation,
-        SetAttestationResult,
+        GetAttestation, GetAttestationResult, Handle, IsScam, SetAttestation, SetAttestationResult,
     },
     axum::{
         extract::{Json, Path},
