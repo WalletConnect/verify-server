@@ -1,9 +1,10 @@
 use {
     anyhow::Context as _,
-    aws_config::meta::region::RegionProviderChain,
+    aws_config::{meta::region::RegionProviderChain, BehaviorVersion},
     aws_sdk_s3::{config::Region, Client as S3Client},
     axum_prometheus::{
         metrics_exporter_prometheus::{Matcher as MetricMatcher, PrometheusBuilder},
+        utils::SECONDS_DURATION_BUCKETS,
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
     },
     bouncer::{
@@ -92,7 +93,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let prometheus = PrometheusBuilder::new()
         .set_buckets_for_metric(
             MetricMatcher::Full(AXUM_HTTP_REQUESTS_DURATION_SECONDS.to_string()),
-            axum_prometheus::SECONDS_DURATION_BUCKETS,
+            SECONDS_DURATION_BUCKETS,
         )
         .context("Failed to set Prometheus buckets for HTTP request latency metrics")?
         .install_recorder()
@@ -145,7 +146,7 @@ async fn main() -> Result<(), anyhow::Error> {
         geoip_resolver,
         signals,
     )
-    .await;
+    .await?;
 
     Ok(())
 }
@@ -208,7 +209,10 @@ where
 
 pub async fn s3_client(config: &Configuration) -> S3Client {
     let region_provider = RegionProviderChain::first_try(Region::new("eu-central-1"));
-    let shared_config = aws_config::from_env().region(region_provider).load().await;
+    let shared_config = aws_config::defaults(BehaviorVersion::latest())
+        .region(region_provider)
+        .load()
+        .await;
 
     let aws_config = match &config.s3_endpoint {
         Some(s3_endpoint) => {

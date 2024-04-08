@@ -8,22 +8,23 @@ authors = [
 build = "build.rs"
 
 [dependencies]
-wc = { git = "https://github.com/WalletConnect/utils-rs.git", tag = "v0.7.1", features = ["geoip", "geoblock", "analytics", "future"] }
+wc = { git = "https://github.com/WalletConnect/utils-rs.git", branch = "feat/axum-0.7", features = ["geoip", "geoblock", "analytics", "future", "metrics"] }
 
 tokio = { version = "1", features = ["full"] }
 
 # Http
-axum = { version = "0.6", features = ["json", "headers"] }
-axum-client-ip = "0.4"
+axum = { version = "0.7.5", features = ["json"] }
+axum-extra = { version = "0.9.3", features = ["typed-header"] }
+axum-client-ip = "0.5.1"
 jsonwebtoken = "8"
-tower = "0.4"
-tower-http = { version = "0.3", features = ["cors", "trace"] }
-hyper = "0.14"
-reqwest = { version = "0.11", features = ["json"] }
+tower = "0.4.13"
+tower-http = { version = "0.5.2", features = ["cors", "trace"] }
+hyper = "1.2.0"
+reqwest = { version = "0.12.2", features = ["json"] }
 
 # Infra
-aws-config = "0.56"
-aws-sdk-s3 = "0.31"
+aws-config = "1.1.9"
+aws-sdk-s3 = "1.21.0"
 deadpool-redis = "0.10"
 cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.9.0" }
 
@@ -31,7 +32,7 @@ cerberus = { git = "https://github.com/WalletConnect/cerberus.git", tag = "v0.9.
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 metrics = "0.21"
-axum-prometheus = "0.3"
+axum-prometheus = "0.6.1"
 
 # Serialisation
 serde = { version = "1.0", features = ["derive"] }

@@ -16,14 +16,13 @@ use {
     async_trait::async_trait,
     axum::{
         extract::{FromRequestParts, Path},
-        headers::UserAgent,
         http::request,
         response::{Html, IntoResponse, Response},
         routing::{get, post},
         Router,
-        TypedHeader,
     },
     axum_client_ip::InsecureClientIp,
+    axum_extra::{headers::UserAgent, TypedHeader},
     axum_prometheus::{EndpointLabel, PrometheusMetricLayerBuilder as MetricLayerBuilder},
     futures::FutureExt,
     hyper::{
@@ -34,13 +33,20 @@ use {
         StatusCode,
     },
     serde::{Deserialize, Serialize},
-    std::{convert::Infallible, future::Future, iter, net::SocketAddr, sync::Arc},
+    std::{
+        convert::Infallible,
+        future::{Future, IntoFuture},
+        iter,
+        net::SocketAddr,
+        sync::Arc,
+    },
     tap::{Pipe, Tap},
+    tokio::net::TcpListener,
     tower_http::cors::{self, CorsLayer},
     tracing::{info, instrument},
-    wc::{
-        geoip,
-        geoip::block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
+    wc::geoip::{
+        self,
+        block::{middleware::GeoBlockLayer, BlockingPolicy as GeoBlockingPolicy},
     },
 };
 
@@ -100,8 +106,9 @@ pub async fn run<S, G>(
     metrics_provider: impl Fn() -> String + Clone + Send + 'static,
     health_provider: impl Fn() -> String + Clone + Send + 'static,
     geoip_resolver: Option<G>,
-    shutdown: impl Future,
-) where
+    shutdown: impl Future + Send + 'static,
+) -> Result<(), anyhow::Error>
+where
     for<'a> S: Handle<Command<GetVerifyStatus<'a>>, Result = GetVerifyStatusResult>
         + Handle<Command<SetAttestation<'a>>, Result = SetAttestationResult>
         + Handle<Command<GetAttestation<'a>>, Result = GetAttestationResult>,
@@ -146,25 +153,30 @@ pub async fn run<S, G>(
     } else {
         server
     };
+    let listener = TcpListener::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.port))).await?;
     let server = server
         .into_make_service()
-        .pipe(|svc| axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.port))).serve(svc))
+        .pipe(|svc| axum::serve(listener, svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown.clone()))
-        .tap(|_| info!("Serving at :{}", cfg.port));
+        .tap(|_| info!("Serving at :{}", cfg.port))
+        .into_future();
 
+    let private_listener =
+        TcpListener::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.metrics_port))).await?;
     let metrics_server = Router::new()
         .route("/metrics", get(metrics::get(metrics_provider)))
         .into_make_service()
-        .pipe(|svc| {
-            axum::Server::bind(&SocketAddr::from(([0, 0, 0, 0], cfg.metrics_port))).serve(svc)
-        })
+        .pipe(|svc| axum::serve(private_listener, svc))
         .pipe(|s| s.with_graceful_shutdown(shutdown))
-        .tap(|_| info!("Serving metrics at :{}", cfg.metrics_port));
+        .tap(|_| info!("Serving metrics at :{}", cfg.metrics_port))
+        .into_future();
 
     let _ = futures::join!(
         server.map(|_| info!("Server terminated")),
         metrics_server.map(|_| info!("Metrics server terminated"))
     );
+
+    Ok(())
 }
 
 fn index_html(token: &str) -> String {
@@ -300,6 +312,10 @@ impl TokenManager {
 
 fn build_content_security_header(domains: Vec<Domain>) -> String {
     let urls = domains.iter().map(AsRef::as_ref).flat_map(|domain| {
+        // TODO support abc.localhost
+        // TODO support localhost:8080
+        // TODO support 127.0.0.1
+        // TODO support ::1
         let proto = if domain == "localhost" {
             "http://"
         } else {
