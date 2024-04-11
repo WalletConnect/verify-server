@@ -160,7 +160,7 @@ where
             },
             ParquetBatchFactory::new(Default::default()).with_observer(observer),
             AwsExporter::new(AwsConfig {
-                export_prefix: format!("notify/{}", data_kind.as_str()),
+                export_prefix: format!("verify-server/{}", data_kind.as_str()),
                 export_name: data_kind.as_str().to_string(),
                 node_addr,
                 file_extension: "parquet".to_owned(),
