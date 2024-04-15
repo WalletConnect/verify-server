@@ -1,8 +1,17 @@
 use {
     crate::{
-        ContextualCommand, Domain, GetAttestation, GetAttestationResult, GetVerifyStatus,
-        GetVerifyStatusError, GetVerifyStatusResult, Handle, ProjectId, SetAttestation,
-        SetAttestationResult, VerifyStatus,
+        ContextualCommand,
+        Domain,
+        GetAttestation,
+        GetAttestationResult,
+        GetVerifyStatus,
+        GetVerifyStatusError,
+        GetVerifyStatusResult,
+        Handle,
+        ProjectId,
+        SetAttestation,
+        SetAttestationResult,
+        VerifyStatus,
     },
     async_trait::async_trait,
     axum::{
@@ -19,7 +28,9 @@ use {
     hyper::{
         header,
         http::{HeaderName, HeaderValue},
-        HeaderMap, Method, StatusCode,
+        HeaderMap,
+        Method,
+        StatusCode,
     },
     serde::{Deserialize, Serialize},
     std::{

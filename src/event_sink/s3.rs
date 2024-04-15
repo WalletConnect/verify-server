@@ -9,8 +9,17 @@ use {
     },
     wc::{
         analytics::{
-            AnalyticsExt, ArcCollector, AwsConfig, AwsExporter, BatchCollector, BatchObserver,
-            CollectionObserver, Collector, CollectorConfig, ExportObserver, ParquetBatchFactory,
+            AnalyticsExt,
+            ArcCollector,
+            AwsConfig,
+            AwsExporter,
+            BatchCollector,
+            BatchObserver,
+            CollectionObserver,
+            Collector,
+            CollectorConfig,
+            ExportObserver,
+            ParquetBatchFactory,
         },
         metrics::otel,
     },
@@ -53,11 +62,10 @@ where
         let size = res.as_deref().map(|data| data.len()).unwrap_or(0);
         let elapsed = elapsed.as_millis() as u64;
 
-        wc::metrics::counter!(
-            "analytics_batches_finished",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        wc::metrics::counter!("analytics_batches_finished", 1, &[
+            self.0.as_kv(),
+            success_kv(res.is_ok())
+        ]);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -81,11 +89,10 @@ where
     E: std::error::Error,
 {
     fn observe_collection(&self, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_records_collected",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        wc::metrics::counter!("analytics_records_collected", 1, &[
+            self.0.as_kv(),
+            success_kv(res.is_ok())
+        ]);
 
         if let Err(err) = res {
             tracing::warn!(
@@ -102,11 +109,10 @@ where
     E: std::error::Error,
 {
     fn observe_export(&self, elapsed: Duration, res: &Result<(), E>) {
-        wc::metrics::counter!(
-            "analytics_batches_exported",
-            1,
-            &[self.0.as_kv(), success_kv(res.is_ok())]
-        );
+        wc::metrics::counter!("analytics_batches_exported", 1, &[
+            self.0.as_kv(),
+            success_kv(res.is_ok())
+        ]);
 
         let elapsed = elapsed.as_millis() as u64;
 
