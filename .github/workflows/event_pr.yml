@@ -49,6 +49,7 @@ jobs:
     uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@fix/udeps-build
     secrets: inherit
     with:
+      rust-toolchain-formatting: nightly
       check-app: ${{ needs.paths-filter.outputs.app == 'true' }}
       check-infra: ${{ needs.paths-filter.outputs.infra == 'true' }}
 
