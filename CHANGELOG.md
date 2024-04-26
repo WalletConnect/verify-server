@@ -2,6 +2,15 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.34.5 - 2024-04-26
+#### Bug Fixes
+- **(terraform)** datalake_bucket_access IAM policy typo (#74) - (6112693) - xDarksome
+#### Miscellaneous Chores
+- upgrade deps (#77) - (6b251f8) - Chris Smith
+- downgrade runner (#75) - (86facf5) - Chris Smith
+
+- - -
+
 ## 0.34.4 - 2024-02-13
 #### Bug Fixes
 - **(cd)** fixing the current version deployment (#69) - (a336d3e) - Max Kalashnikoff
