@@ -32,9 +32,10 @@ permissions:
 jobs:
   ci:
     name: CI
-    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.7
+    uses: WalletConnect/ci_workflows/.github/workflows/ci.yml@0.2.9
     secrets: inherit
     with:
+      rust-toolchain-formatting: nightly
       check-infra: ${{ inputs.check-infra }}
       check-app: ${{ inputs.check-app }}
 
