@@ -103,7 +103,7 @@ impl<'a, I: Infra> Handle<GetVerifyStatus<'a>> for Service<I> {
         let project_data = self
             .project_registry()
             .project_data(cmd.project_id)
-            .with_timeout(Duration::from_secs(10))
+            .with_timeout(Duration::from_secs(1))
             .await
             .context("ProjectRegistry::project_data timed out")?
             .tap_err(|e| error!("ProjectRegistry::project_data: {e:?}"))?
