@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.34.6 - 2024-05-27
+#### Bug Fixes
+- reduce timeout (#80) - (aa88934) - Chris Smith
+
+- - -
+
 ## 0.34.5 - 2024-04-26
 #### Bug Fixes
 - **(terraform)** datalake_bucket_access IAM policy typo (#74) - (6112693) - xDarksome
