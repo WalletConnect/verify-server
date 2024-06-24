@@ -65,6 +65,10 @@ module "ecs" {
   project_registry_cache_url = "redis://${module.redis.endpoint}/1"
   scam_guard_cache_url       = "redis://${module.redis.endpoint}/2"
 
+  cf_kv_account_id   = var.cf_kv_account_id
+  cf_kv_namespace_id = var.cf_kv_namespace_id
+  cf_kv_bearer_token = var.cf_kv_bearer_token
+
   ofac_blocked_countries = var.ofac_blocked_countries
 
   # Analytics

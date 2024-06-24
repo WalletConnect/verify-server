@@ -8,6 +8,7 @@ use {
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
     },
     bouncer::{
+        attestation_store::{cf_kv::CloudflareKv, migration::MigrationStore},
         event_sink,
         http_server::{RequestInfo, ServerConfig},
         project_registry::{self, CachedExt as _},
@@ -55,6 +56,10 @@ pub struct Configuration {
     pub data_api_auth_token: String,
     pub scam_guard_cache_url: String,
 
+    pub cf_kv_account_id: String,
+    pub cf_kv_namespace_id: String,
+    pub cf_kv_bearer_token: String,
+
     pub secret: String,
 
     pub s3_endpoint: Option<String>,
@@ -99,8 +104,17 @@ async fn main() -> Result<(), anyhow::Error> {
         .install_recorder()
         .context("Failed to install Prometheus metrics recorder")?;
 
-    let attestation_store = redis::new("attestation_store", config.attestation_cache_url.clone())
-        .context("Failed to initialize AttestationStore")?;
+    let attestation_store = {
+        let redis_attestation_store =
+            redis::new("attestation_store", config.attestation_cache_url.clone())
+                .context("Failed to initialize AttestationStore")?;
+        let cf_kv_attestation_store = CloudflareKv::new(
+            config.cf_kv_account_id,
+            config.cf_kv_namespace_id,
+            config.cf_kv_bearer_token,
+        );
+        MigrationStore::new(redis_attestation_store, cf_kv_attestation_store)
+    };
 
     let project_registry_cache = redis::new(
         "project_registry_cache",

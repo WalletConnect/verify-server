@@ -152,6 +152,21 @@ variable "scam_guard_cache_url" {
   type        = string
 }
 
+variable "cf_kv_account_id" {
+  description = "The account ID of the Cloudflare KV store"
+  type        = string
+}
+
+variable "cf_kv_namespace_id" {
+  description = "The namespace ID of the Cloudflare KV store"
+  type        = string
+}
+
+variable "cf_kv_bearer_token" {
+  description = "The Cloudflare API bearer token"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string

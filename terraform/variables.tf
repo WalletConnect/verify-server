@@ -75,6 +75,24 @@ variable "ofac_blocked_countries" {
   default     = ""
 }
 
+#-------------------------------------------------------------------------------
+# Cloudflare KV for V2 migration
+
+variable "cf_kv_account_id" {
+  description = "The account ID of the Cloudflare KV store"
+  type        = string
+}
+
+variable "cf_kv_namespace_id" {
+  description = "The namespace ID of the Cloudflare KV store"
+  type        = string
+}
+
+variable "cf_kv_bearer_token" {
+  description = "The Cloudflare API bearer token"
+  type        = string
+}
+
 
 #-------------------------------------------------------------------------------
 # Project Registry
