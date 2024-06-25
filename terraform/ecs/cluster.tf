@@ -86,9 +86,7 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "PROJECT_REGISTRY_CACHE_URL", value = var.project_registry_cache_url },
         { name = "SCAM_GUARD_CACHE_URL", value = var.scam_guard_cache_url },
 
-        { name = "CF_KV_ACCOUNT_ID", value = var.cf_kv_account_id },
-        { name = "CF_KV_NAMESPACE_ID", value = var.cf_kv_namespace_id },
-        { name = "CF_KV_BEARER_TOKEN", value = var.cf_kv_bearer_token },
+        { name = "CF_KV_ENDPOINT", value = var.cf_kv_endpoint },
 
         { name = "DATA_LAKE_BUCKET", value = var.analytics_datalake_bucket_name },
 

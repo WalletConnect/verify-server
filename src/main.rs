@@ -10,7 +10,7 @@ use {
     bouncer::{
         attestation_store::{cf_kv::CloudflareKv, migration::MigrationStore},
         event_sink,
-        http_server::{RequestInfo, ServerConfig},
+        http_server::{RequestInfo, ServerConfig, TokenManager},
         project_registry::{self, CachedExt as _},
         scam_guard,
         util::redis,
@@ -56,9 +56,7 @@ pub struct Configuration {
     pub data_api_auth_token: String,
     pub scam_guard_cache_url: String,
 
-    pub cf_kv_account_id: String,
-    pub cf_kv_namespace_id: String,
-    pub cf_kv_bearer_token: String,
+    pub cf_kv_endpoint: String,
 
     pub secret: String,
 
@@ -109,9 +107,11 @@ async fn main() -> Result<(), anyhow::Error> {
             redis::new("attestation_store", config.attestation_cache_url.clone())
                 .context("Failed to initialize AttestationStore")?;
         let cf_kv_attestation_store = CloudflareKv::new(
-            config.cf_kv_account_id,
-            config.cf_kv_namespace_id,
-            config.cf_kv_bearer_token,
+            config
+                .cf_kv_endpoint
+                .parse()
+                .context("Failed to parse cf_kv_endpoint")?,
+            TokenManager::new(config.secret.as_bytes()),
         );
         MigrationStore::new(redis_attestation_store, cf_kv_attestation_store)
     };

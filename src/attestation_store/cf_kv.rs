@@ -1,54 +1,54 @@
 use {
     super::{AttestationStore, Result},
+    crate::http_server::{CsrfToken, TokenManager},
     async_trait::async_trait,
     hyper::StatusCode,
+    reqwest::Url,
     serde::Serialize,
     std::time::Duration,
 };
 
-const ATTESTATION_TTL_SECS: usize = 300;
-
+#[derive(Clone)]
 pub struct CloudflareKv {
-    pub account_id: String,
-    pub namespace_id: String,
-    pub bearer_token: String,
+    pub endpoint: Url,
+    pub token_manager: TokenManager,
     pub http_client: reqwest::Client,
 }
 
 impl CloudflareKv {
-    pub fn new(account_id: String, namespace_id: String, bearer_token: String) -> Self {
+    pub fn new(endpoint: Url, token_manager: TokenManager) -> Self {
         Self {
-            account_id,
-            namespace_id,
-            bearer_token,
+            endpoint,
+            token_manager,
             http_client: reqwest::Client::new(),
         }
     }
 }
 
 #[derive(Serialize)]
-struct SetBulkBody<'a> {
-    expiration_ttl: usize,
-    key: &'a str,
-    value: &'a str,
+#[serde(rename_all = "camelCase")]
+struct SetAttestationCompatBody<'a> {
+    attestation_id: &'a str,
+    origin: &'a str,
 }
 
 #[async_trait]
 impl AttestationStore for CloudflareKv {
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<()> {
-        let url = format!(
-            "https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/bulk",
-            account_id = self.account_id, namespace_id = self.namespace_id
-        );
+        let url = self.endpoint.join("/attestation")?;
         let res = self
             .http_client
-            .put(&url)
-            .bearer_auth(&self.bearer_token)
-            .json(&vec![SetBulkBody {
-                expiration_ttl: ATTESTATION_TTL_SECS,
-                key: id,
-                value: origin,
-            }])
+            .post(url)
+            .header(
+                CsrfToken::header_name(),
+                self.token_manager
+                    .generate_csrf_token()
+                    .map_err(|e| anyhow::anyhow!("{e:?}"))?,
+            )
+            .json(&SetAttestationCompatBody {
+                attestation_id: id,
+                origin,
+            })
             .timeout(Duration::from_secs(1))
             .send()
             .await?;
@@ -64,14 +64,12 @@ impl AttestationStore for CloudflareKv {
     }
 
     async fn get_attestation(&self, id: &str) -> Result<Option<String>> {
-        let url = format!(
-            "https://api.cloudflare.com/client/v4/accounts/{account_id}/storage/kv/namespaces/{namespace_id}/values/{id}",
-            account_id = self.account_id, namespace_id = self.namespace_id
-        );
+        let url = self
+            .endpoint
+            .join(&format!("/v1/compat-attestation/{id}"))?;
         let response = self
             .http_client
-            .get(&url)
-            .bearer_auth(&self.bearer_token)
+            .get(url)
             .timeout(Duration::from_secs(1))
             .send()
             .await?;
