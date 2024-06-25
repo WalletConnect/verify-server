@@ -312,10 +312,6 @@ impl TokenManager {
 
 fn build_content_security_header(domains: Vec<Domain>) -> String {
     let urls = domains.iter().map(AsRef::as_ref).flat_map(|domain| {
-        // TODO support abc.localhost
-        // TODO support localhost:8080
-        // TODO support 127.0.0.1
-        // TODO support ::1
         let proto = if domain == "localhost" {
             "http://"
         } else {
@@ -329,7 +325,12 @@ fn build_content_security_header(domains: Vec<Domain>) -> String {
         [" ", proto, "*.", domain, " ", proto, domain]
     });
 
-    iter::once("frame-ancestors").chain(urls).collect()
+    let localhost_urls = " https://localhost:* http://localhost:* https://*.localhost:* http://*.localhost:* https://127.0.0.1:* http://127.0.0.1:*";
+
+    iter::once("frame-ancestors")
+        .chain(urls)
+        .chain(iter::once(localhost_urls))
+        .collect()
 }
 
 #[test]
@@ -342,14 +343,14 @@ fn test_build_content_security_header() {
 
     case(
         &["walletconnect.com"],
-        "frame-ancestors https://*.walletconnect.com https://walletconnect.com",
+        "frame-ancestors https://*.walletconnect.com https://walletconnect.com https://localhost:* http://localhost:* https://*.localhost:* http://*.localhost:* https://127.0.0.1:* http://127.0.0.1:*",
     );
 
     case(
         &["walletconnect.com", "vercel.app", "localhost"],
         "frame-ancestors https://*.walletconnect.com https://walletconnect.com \
                          https://*.vercel.app https://vercel.app \
-                         http://*.localhost http://localhost",
+                         http://*.localhost http://localhost https://localhost:* http://localhost:* https://*.localhost:* http://*.localhost:* https://127.0.0.1:* http://127.0.0.1:*",
     );
 }
 
