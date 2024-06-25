@@ -73,17 +73,16 @@ impl AttestationStore for CloudflareKv {
             .timeout(Duration::from_secs(1))
             .send()
             .await?;
-        if response.status().is_success() {
-            let value = response.text().await?;
-            Ok(Some(value))
-        } else if response.status() == StatusCode::NOT_FOUND {
-            Ok(None)
-        } else {
-            Err(anyhow::anyhow!(
-                "Failed to get attestation: status:{} response body:{:?}",
-                response.status(),
+        match response.status() {
+            status if status.is_success() => {
+                let value = response.text().await?;
+                Ok(Some(value))
+            }
+            StatusCode::NOT_FOUND => Ok(None),
+            status => Err(anyhow::anyhow!(
+                "Failed to get attestation: status:{status} response body:{:?}",
                 response.text().await
-            ))
+            )),
         }
     }
 }
