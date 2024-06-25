@@ -20,14 +20,25 @@ impl AttestationStore for MigrationStore {
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<()> {
         let redis_fut = self.redis.set_attestation(id, origin);
         let cf_kv_fut = self.cf_kv.set_attestation(id, origin);
-        tokio::try_join!(redis_fut, cf_kv_fut).map(|_| ())
+        let (redis_res, cf_kv_res) = tokio::join!(redis_fut, cf_kv_fut);
+        if let Err(e) = cf_kv_res {
+            log::error!("Failed to set attestation in Cloudflare KV: {e} {e:?}");
+        }
+        redis_res
     }
 
     async fn get_attestation(&self, id: &str) -> Result<Option<String>> {
         if let Some(attestation) = self.redis.get_attestation(id).await? {
             Ok(Some(attestation))
         } else {
-            self.cf_kv.get_attestation(id).await
+            let res = self.cf_kv.get_attestation(id).await;
+            match res {
+                Ok(a) => Ok(a),
+                Err(e) => {
+                    log::error!("Failed to get attestation from Cloudflare KV: {e} {e:?}");
+                    Ok(None)
+                }
+            }
         }
     }
 }
