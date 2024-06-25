@@ -27,7 +27,7 @@ impl CloudflareKv {
 
 #[derive(Serialize)]
 struct SetBulkBody<'a> {
-    expiration: usize,
+    expiration_ttl: usize,
     key: &'a str,
     value: &'a str,
 }
@@ -44,7 +44,7 @@ impl AttestationStore for CloudflareKv {
             .put(&url)
             .bearer_auth(&self.bearer_token)
             .json(&vec![SetBulkBody {
-                expiration: ATTESTATION_TTL_SECS,
+                expiration_ttl: ATTESTATION_TTL_SECS,
                 key: id,
                 value: origin,
             }])
