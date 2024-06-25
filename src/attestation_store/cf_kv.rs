@@ -1,6 +1,7 @@
 use {
     super::{AttestationStore, Result},
     async_trait::async_trait,
+    hyper::StatusCode,
     serde::Serialize,
     std::time::Duration,
 };
@@ -74,13 +75,17 @@ impl AttestationStore for CloudflareKv {
             .timeout(Duration::from_secs(1))
             .send()
             .await?;
-        // TODO what is the status code for a key not found?
-        // TODO for not-key not found errors throw error instead of None
         if response.status().is_success() {
             let value = response.text().await?;
             Ok(Some(value))
-        } else {
+        } else if response.status() == StatusCode::NOT_FOUND {
             Ok(None)
+        } else {
+            Err(anyhow::anyhow!(
+                "Failed to get attestation: status:{} response body:{:?}",
+                response.status(),
+                response.text().await
+            ))
         }
     }
 }
