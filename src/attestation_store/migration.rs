@@ -4,19 +4,19 @@ use {
     async_trait::async_trait,
 };
 
-pub struct MigrationStore {
+pub struct Store {
     redis: redis::Adapter,
     cf_kv: CloudflareKv,
 }
 
-impl MigrationStore {
+impl Store {
     pub fn new(redis: redis::Adapter, cf_kv: CloudflareKv) -> Self {
         Self { redis, cf_kv }
     }
 }
 
 #[async_trait]
-impl AttestationStore for MigrationStore {
+impl AttestationStore for Store {
     async fn set_attestation(&self, id: &str, origin: &str) -> Result<()> {
         let redis_fut = self.redis.set_attestation(id, origin);
         let cf_kv_fut = self.cf_kv.set_attestation(id, origin);

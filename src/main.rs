@@ -8,7 +8,7 @@ use {
         AXUM_HTTP_REQUESTS_DURATION_SECONDS,
     },
     bouncer::{
-        attestation_store::{cf_kv::CloudflareKv, migration::MigrationStore},
+        attestation_store::{cf_kv::CloudflareKv, migration},
         event_sink,
         http_server::{RequestInfo, ServerConfig, TokenManager},
         project_registry::{self, CachedExt as _},
@@ -113,7 +113,7 @@ async fn main() -> Result<(), anyhow::Error> {
                 .context("Failed to parse cf_kv_endpoint")?,
             TokenManager::new(config.secret.as_bytes()),
         );
-        MigrationStore::new(redis_attestation_store, cf_kv_attestation_store)
+        migration::Store::new(redis_attestation_store, cf_kv_attestation_store)
     };
 
     let project_registry_cache = redis::new(
