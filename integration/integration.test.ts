@@ -112,7 +112,7 @@ describe('verify', () => {
       expect(resp.status).toBe(200)
 
       let policy = resp.headers["content-security-policy"]
-      expect(policy).toBe(`frame-ancestors http://*.localhost http://localhost`)
+      expect(policy).toBe(`frame-ancestors http://*.localhost http://localhost https://localhost:* http://localhost:* https://*.localhost:* http://*.localhost:* https://127.0.0.1:* http://127.0.0.1:*`)
     })
 
     describe('invalid project ID', () => {
