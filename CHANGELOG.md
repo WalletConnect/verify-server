@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.35.0 - 2024-06-26
+#### Features
+- allow localhost (#82) - (3147ca7) - Chris Smith
+
+- - -
+
 ## 0.34.6 - 2024-05-27
 #### Bug Fixes
 - reduce timeout (#80) - (aa88934) - Chris Smith
