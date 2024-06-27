@@ -86,6 +86,8 @@ resource "aws_ecs_task_definition" "app_task" {
         { name = "PROJECT_REGISTRY_CACHE_URL", value = var.project_registry_cache_url },
         { name = "SCAM_GUARD_CACHE_URL", value = var.scam_guard_cache_url },
 
+        { name = "CF_KV_ENDPOINT", value = var.cf_kv_endpoint },
+
         { name = "DATA_LAKE_BUCKET", value = var.analytics_datalake_bucket_name },
 
         { name = "BLOCKED_COUNTRIES", value = var.ofac_blocked_countries },

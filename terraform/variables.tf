@@ -75,6 +75,13 @@ variable "ofac_blocked_countries" {
   default     = ""
 }
 
+#-------------------------------------------------------------------------------
+# Cloudflare KV for V2 migration
+
+variable "cf_kv_endpoint" {
+  description = "The endpoint of the Cloudflare KV worker"
+  type        = string
+}
 
 #-------------------------------------------------------------------------------
 # Project Registry

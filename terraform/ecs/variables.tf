@@ -152,6 +152,11 @@ variable "scam_guard_cache_url" {
   type        = string
 }
 
+variable "cf_kv_endpoint" {
+  description = "The endpoint of the Cloudflare KV worker"
+  type        = string
+}
+
 variable "ofac_blocked_countries" {
   description = "The list of countries under OFAC sanctions"
   type        = string

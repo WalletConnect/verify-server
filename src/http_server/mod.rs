@@ -84,13 +84,14 @@ impl<S, G> Server<S, G> {
     }
 }
 
-struct TokenManager {
+#[derive(Clone)]
+pub struct TokenManager {
     encoding_key: jsonwebtoken::EncodingKey,
     decoding_key: jsonwebtoken::DecodingKey,
 }
 
 impl TokenManager {
-    fn new(secret: &[u8]) -> Self {
+    pub fn new(secret: &[u8]) -> Self {
         Self {
             encoding_key: jsonwebtoken::EncodingKey::from_secret(secret),
             decoding_key: jsonwebtoken::DecodingKey::from_secret(secret),
@@ -262,14 +263,14 @@ where
 }
 
 #[derive(Serialize, Deserialize)]
-struct CsrfToken {
+pub struct CsrfToken {
     exp: usize,
 }
 
 impl CsrfToken {
     // Using const value instead of a fn produces this warning:
     // https://rust-lang.github.io/rust-clippy/master/index.html#declare_interior_mutable_const
-    const fn header_name() -> HeaderName {
+    pub const fn header_name() -> HeaderName {
         HeaderName::from_static("x-csrf-token")
     }
 
@@ -282,7 +283,7 @@ impl CsrfToken {
 }
 
 impl TokenManager {
-    fn generate_csrf_token(&self) -> Result<String, Response> {
+    pub fn generate_csrf_token(&self) -> Result<String, Response> {
         use jsonwebtoken::{encode, get_current_timestamp, Header};
 
         const TTL_SECS: usize = 60 * 60; // 1 hour
