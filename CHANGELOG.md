@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## 0.36.0 - 2024-06-27
+#### Bug Fixes
+- CSP test (#83) - (6871789) - Chris Smith
+#### Features
+- v2 migration Cloudflare KV (#81) - (527987e) - Chris Smith
+
+- - -
+
 ## 0.35.0 - 2024-06-26
 #### Features
 - allow localhost (#82) - (3147ca7) - Chris Smith
